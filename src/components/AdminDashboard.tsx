@@ -70,57 +70,82 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
 
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Approved': return 'bg-green-100 text-green-800';
-      case 'Rejected': return 'bg-red-100 text-red-800';
-      case 'Payment Released': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Pending': return 'bg-warning text-white';
+      case 'Approved': return 'bg-success text-white';
+      case 'Rejected': return 'bg-error text-white';
+      case 'Payment Released': return 'bg-primary text-white';
+      default: return 'bg-gray-200 text-text-secondary';
     }
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+    <div className="space-y-8">
+      <h2 className="text-4xl font-bold text-text-primary">Admin Dashboard</h2>
       
+      {/* System Statistics */}
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">System Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="text-center p-4 bg-secondary rounded-lg">
+            <p className="text-4xl font-bold text-primary">{pendingClaims.length}</p>
+            <p className="text-md text-text-secondary">Pending Claims</p>
+          </div>
+          <div className="text-center p-4 bg-secondary rounded-lg">
+            <p className="text-4xl font-bold text-success">{approvedClaims.length}</p>
+            <p className="text-md text-text-secondary">Approved Claims</p>
+          </div>
+          <div className="text-center p-4 bg-secondary rounded-lg">
+            <p className="text-4xl font-bold text-warning">{pendingClinics.length}</p>
+            <p className="text-md text-text-secondary">Pending Clinics</p>
+          </div>
+          <div className="text-center p-4 bg-secondary rounded-lg">
+            <p className="text-4xl font-bold text-accent">
+              ${approvedClaims.reduce((sum, claim) => sum + claim.amount, 0)}
+            </p>
+            <p className="text-md text-text-secondary">Total Value</p>
+          </div>
+        </div>
+      </div>
+
       {/* Pending Claims */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold mb-4">Pending Claims Review</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Pending Claims Review</h3>
         {pendingClaims.length === 0 ? (
-          <p className="text-gray-500">No pending claims to review.</p>
+          <p className="text-text-secondary">No pending claims to review.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-2 text-left">Claim ID</th>
-                  <th className="px-4 py-2 text-left">Patient ID</th>
-                  <th className="px-4 py-2 text-left">Clinic</th>
-                  <th className="px-4 py-2 text-left">Service</th>
-                  <th className="px-4 py-2 text-left">Amount</th>
-                  <th className="px-4 py-2 text-left">Date</th>
-                  <th className="px-4 py-2 text-left">Actions</th>
+                <tr className="bg-secondary">
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Claim ID</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Patient ID</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Clinic</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Service</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Amount</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Date</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {pendingClaims.map((claim) => (
-                  <tr key={claim.claim_id} className="border-t">
-                    <td className="px-4 py-2">{claim.claim_id}</td>
-                    <td className="px-4 py-2">{claim.patient_id}</td>
-                    <td className="px-4 py-2">{claim.clinic}</td>
-                    <td className="px-4 py-2">{claim.service_code}</td>
-                    <td className="px-4 py-2">${claim.amount}</td>
-                    <td className="px-4 py-2">{claim.date}</td>
-                    <td className="px-4 py-2">
+                  <tr key={claim.claim_id} className="border-t border-border-color hover:bg-gray-50">
+                    <td className="px-6 py-4">{claim.claim_id}</td>
+                    <td className="px-6 py-4">{claim.patient_id}</td>
+                    <td className="px-6 py-4">{claim.clinic}</td>
+                    <td className="px-6 py-4">{claim.service_code}</td>
+                    <td className="px-6 py-4">${claim.amount}</td>
+                    <td className="px-6 py-4">{claim.date}</td>
+                    <td className="px-6 py-4">
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleApprove(claim.claim_id)}
-                          className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded text-sm"
+                          className="bg-success hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
                         >
                           Approve
                         </button>
                         <button
                           onClick={() => handleReject(claim.claim_id)}
-                          className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm"
+                          className="bg-error hover:bg-red-700 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
                         >
                           Reject
                         </button>
@@ -135,40 +160,40 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
       </div>
 
       {/* Approved Claims */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold mb-4">Approved Claims - Payment Release</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Approved Claims - Payment Release</h3>
         {approvedClaims.length === 0 ? (
-          <p className="text-gray-500">No approved claims pending payment release.</p>
+          <p className="text-text-secondary">No approved claims pending payment release.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-2 text-left">Claim ID</th>
-                  <th className="px-4 py-2 text-left">Patient ID</th>
-                  <th className="px-4 py-2 text-left">Clinic</th>
-                  <th className="px-4 py-2 text-left">Amount</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                  <th className="px-4 py-2 text-left">Actions</th>
+                <tr className="bg-secondary">
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Claim ID</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Patient ID</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Clinic</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Amount</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Status</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {approvedClaims.map((claim) => (
-                  <tr key={claim.claim_id} className="border-t">
-                    <td className="px-4 py-2">{claim.claim_id}</td>
-                    <td className="px-4 py-2">{claim.patient_id}</td>
-                    <td className="px-4 py-2">{claim.clinic}</td>
-                    <td className="px-4 py-2">${claim.amount}</td>
-                    <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded text-sm ${getStatusColor(claim.status)}`}>
+                  <tr key={claim.claim_id} className="border-t border-border-color hover:bg-gray-50">
+                    <td className="px-6 py-4">{claim.claim_id}</td>
+                    <td className="px-6 py-4">{claim.patient_id}</td>
+                    <td className="px-6 py-4">{claim.clinic}</td>
+                    <td className="px-6 py-4">${claim.amount}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(claim.status)}`}>
                         {claim.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-6 py-4">
                       {claim.status === 'Approved' && (
                         <button
                           onClick={() => handleRelease(claim.claim_id)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-sm"
+                          className="bg-primary hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
                         >
                           Release Payment
                         </button>
@@ -183,25 +208,25 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
       </div>
 
       {/* Clinic Verification */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold mb-4">Clinic Verification</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Clinic Verification</h3>
         {pendingClinics.length === 0 ? (
-          <p className="text-gray-500">No clinics pending verification.</p>
+          <p className="text-text-secondary">No clinics pending verification.</p>
         ) : (
           <div className="space-y-4">
             {pendingClinics.map((clinic, index) => (
-              <div key={index} className="border rounded-lg p-4">
+              <div key={index} className="border border-border-color rounded-lg p-4 bg-secondary">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h4 className="font-semibold">{clinic.name}</h4>
-                    <p className="text-sm text-gray-600">Address: {clinic.address}</p>
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
+                    <h4 className="font-semibold text-lg text-text-primary">{clinic.name}</h4>
+                    <p className="text-sm text-text-secondary">Address: {clinic.address}</p>
+                    <span className="bg-warning text-white px-3 py-1 rounded-full text-sm font-semibold mt-2 inline-block">
                       ⏳ Pending Verification
                     </span>
                   </div>
                   <button
                     onClick={() => handleVerifyClinic(clinic.address)}
-                    className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
+                    className="bg-success hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-transform transform hover:scale-105"
                   >
                     Verify Clinic
                   </button>
@@ -210,31 +235,6 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
             ))}
           </div>
         )}
-      </div>
-
-      {/* System Statistics */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold mb-4">System Statistics</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600">{pendingClaims.length}</p>
-            <p className="text-sm text-gray-600">Pending Claims</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-green-600">{approvedClaims.length}</p>
-            <p className="text-sm text-gray-600">Approved Claims</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-yellow-600">{pendingClinics.length}</p>
-            <p className="text-sm text-gray-600">Pending Clinics</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-purple-600">
-              ${approvedClaims.reduce((sum, claim) => sum + claim.amount, 0)}
-            </p>
-            <p className="text-sm text-gray-600">Total Value</p>
-          </div>
-        </div>
       </div>
     </div>
   );

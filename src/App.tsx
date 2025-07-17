@@ -12,42 +12,42 @@ function App(): JSX.Element {
   const [userType, setUserType] = useState<UserType>('');
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-blue-600 text-white p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Health Insurance Claims</h1>
+    <div className="min-h-screen bg-secondary">
+      <header className="bg-primary text-white shadow-md">
+        <div className="container mx-auto flex justify-between items-center p-4">
+          <h1 className="text-3xl font-bold">Stellar Health</h1>
           {walletAddress && (
-            <div className="text-sm">
+            <div className="text-sm bg-blue-400 px-4 py-2 rounded-full">
               Connected: {walletService.formatAddress(walletAddress)}
             </div>
           )}
         </div>
       </header>
 
-      <main className="container mx-auto p-4">
+      <main className="container mx-auto p-8">
         {!walletAddress ? (
           <ConnectWallet onConnect={setWalletAddress} />
         ) : (
           <div>
             {!userType ? (
-              <div className="bg-blue rounded-lg shadow-md p-6 max-w-md mx-auto">
-                <h2 className="text-xl font-semibold mb-4">Select Your Role</h2>
-                <div className="space-y-3">
+              <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg mx-auto">
+                <h2 className="text-2xl font-semibold mb-6 text-center text-text-primary">Select Your Role</h2>
+                <div className="space-y-4">
                   <button
                     onClick={() => setUserType('clinic')}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg"
+                    className="w-full bg-primary hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
                   >
                     Clinic Dashboard
                   </button>
                   <button
                     onClick={() => setUserType('admin')}
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
+                    className="w-full bg-accent hover:bg-teal-500 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
                   >
                     Admin Dashboard
                   </button>
                   <button
                     onClick={() => setUserType('patient')}
-                    className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg"
+                    className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
                   >
                     Patient View
                   </button>
@@ -55,10 +55,10 @@ function App(): JSX.Element {
               </div>
             ) : (
               <div>
-                <div className="mb-4">
+                <div className="mb-6">
                   <button
                     onClick={() => setUserType('')}
-                    className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg"
+                    className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-shadow"
                   >
                     ← Back to Role Selection
                   </button>

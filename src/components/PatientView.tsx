@@ -23,18 +23,18 @@ function PatientView({ walletAddress }: DashboardProps): JSX.Element {
 
   const getStatusColor = (status: ClaimStatus): string => {
     switch (status) {
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Approved': return 'bg-green-100 text-green-800';
-      case 'Rejected': return 'bg-red-100 text-red-800';
-      case 'Payment Released': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Pending': return 'bg-warning text-white';
+      case 'Approved': return 'bg-success text-white';
+      case 'Rejected': return 'bg-error text-white';
+      case 'Payment Released': return 'bg-primary text-white';
+      default: return 'bg-gray-200 text-text-secondary';
     }
   };
 
   const getReputationColor = (percentage: number): string => {
-    if (percentage >= 90) return 'text-green-600';
-    if (percentage >= 75) return 'text-yellow-600';
-    return 'text-red-600';
+    if (percentage >= 90) return 'text-success';
+    if (percentage >= 75) return 'text-warning';
+    return 'text-error';
   };
 
   const calculateReputationPercentage = (success: number, total: number): number => {
@@ -42,55 +42,55 @@ function PatientView({ walletAddress }: DashboardProps): JSX.Element {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Patient Dashboard</h2>
+    <div className="space-y-8">
+      <h2 className="text-4xl font-bold text-text-primary">Patient Dashboard</h2>
       
       {/* Claim Search */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold mb-4">Search Claim Status</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Search Claim Status</h3>
         <div className="flex space-x-3">
           <input
             type="text"
             value={searchClaimId}
             onChange={(e) => setSearchClaimId(e.target.value)}
             placeholder="Enter Claim ID"
-            className="flex-1 p-2 border border-gray-300 rounded"
+            className="flex-1 p-3 border border-border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <button
             onClick={searchClaim}
-            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+            className="bg-primary hover:bg-blue-700 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
           >
             Search
           </button>
         </div>
         
         {selectedClaim && (
-          <div className="mt-4 p-4 border rounded-lg bg-gray-50">
-            <h4 className="font-semibold mb-2">Claim Details</h4>
+          <div className="mt-6 p-6 border border-border-color rounded-lg bg-secondary">
+            <h4 className="font-semibold text-xl mb-4 text-text-primary">Claim Details</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Claim ID</p>
-                <p className="font-medium">{selectedClaim.claim_id}</p>
+                <p className="text-sm text-text-secondary">Claim ID</p>
+                <p className="font-medium text-text-primary">{selectedClaim.claim_id}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Patient ID</p>
-                <p className="font-medium">{selectedClaim.patient_id}</p>
+                <p className="text-sm text-text-secondary">Patient ID</p>
+                <p className="font-medium text-text-primary">{selectedClaim.patient_id}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Service</p>
-                <p className="font-medium">{selectedClaim.service_code}</p>
+                <p className="text-sm text-text-secondary">Service</p>
+                <p className="font-medium text-text-primary">{selectedClaim.service_code}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Amount</p>
-                <p className="font-medium">${selectedClaim.amount}</p>
+                <p className="text-sm text-text-secondary">Amount</p>
+                <p className="font-medium text-text-primary">${selectedClaim.amount}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Clinic</p>
-                <p className="font-medium">{selectedClaim.clinic}</p>
+                <p className="text-sm text-text-secondary">Clinic</p>
+                <p className="font-medium text-text-primary">{selectedClaim.clinic}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Status</p>
-                <span className={`px-2 py-1 rounded text-sm ${getStatusColor(selectedClaim.status)}`}>
+                <p className="text-sm text-text-secondary">Status</p>
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(selectedClaim.status)}`}>
                   {selectedClaim.status}
                 </span>
               </div>
@@ -99,40 +99,40 @@ function PatientView({ walletAddress }: DashboardProps): JSX.Element {
         )}
         
         {searchClaimId && !selectedClaim && (
-          <div className="mt-4 p-4 border border-red-300 rounded-lg bg-red-50">
-            <p className="text-red-700">No claim found with ID: {searchClaimId}</p>
+          <div className="mt-6 p-4 border border-error rounded-lg bg-red-100 text-error">
+            <p className="font-semibold">No claim found with ID: {searchClaimId}</p>
           </div>
         )}
       </div>
 
       {/* My Claims History */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold mb-4">My Claims History</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">My Claims History</h3>
         {claims.length === 0 ? (
-          <p className="text-gray-500">No claims found.</p>
+          <p className="text-text-secondary">No claims found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-2 text-left">Claim ID</th>
-                  <th className="px-4 py-2 text-left">Service</th>
-                  <th className="px-4 py-2 text-left">Clinic</th>
-                  <th className="px-4 py-2 text-left">Amount</th>
-                  <th className="px-4 py-2 text-left">Date</th>
-                  <th className="px-4 py-2 text-left">Status</th>
+                <tr className="bg-secondary">
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Claim ID</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Service</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Clinic</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Amount</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Date</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {claims.map((claim) => (
-                  <tr key={claim.claim_id} className="border-t">
-                    <td className="px-4 py-2">{claim.claim_id}</td>
-                    <td className="px-4 py-2">{claim.service_code}</td>
-                    <td className="px-4 py-2">{claim.clinic}</td>
-                    <td className="px-4 py-2">${claim.amount}</td>
-                    <td className="px-4 py-2">{claim.date}</td>
-                    <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded text-sm ${getStatusColor(claim.status)}`}>
+                  <tr key={claim.claim_id} className="border-t border-border-color hover:bg-gray-50">
+                    <td className="px-6 py-4">{claim.claim_id}</td>
+                    <td className="px-6 py-4">{claim.service_code}</td>
+                    <td className="px-6 py-4">{claim.clinic}</td>
+                    <td className="px-6 py-4">${claim.amount}</td>
+                    <td className="px-6 py-4">{claim.date}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(claim.status)}`}>
                         {claim.status}
                       </span>
                     </td>
@@ -145,27 +145,27 @@ function PatientView({ walletAddress }: DashboardProps): JSX.Element {
       </div>
 
       {/* Clinic Directory */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold mb-4">Verified Clinics Directory</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Verified Clinics Directory</h3>
         <div className="space-y-4">
           {clinics.map((clinic, index) => {
             const reputationPercentage = calculateReputationPercentage(clinic.reputation.success, clinic.reputation.total);
             
             return (
-              <div key={index} className="border rounded-lg p-4">
+              <div key={index} className="border border-border-color rounded-lg p-4 bg-secondary">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <h4 className="font-semibold">{clinic.name}</h4>
-                    <p className="text-sm text-gray-600">Address: {clinic.address}</p>
+                    <h4 className="font-semibold text-lg text-text-primary">{clinic.name}</h4>
+                    <p className="text-sm text-text-secondary">Address: {clinic.address}</p>
                     
                     <div className="mt-2 flex items-center space-x-4">
                       <div className="flex items-center">
                         {clinic.isVerified ? (
-                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
+                          <span className="bg-success text-white px-3 py-1 rounded-full text-sm font-semibold">
                             ✓ Verified
                           </span>
                         ) : (
-                          <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
+                          <span className="bg-warning text-white px-3 py-1 rounded-full text-sm font-semibold">
                             ⏳ Pending Verification
                           </span>
                         )}
@@ -173,11 +173,11 @@ function PatientView({ walletAddress }: DashboardProps): JSX.Element {
                       
                       {clinic.reputation.total > 0 && (
                         <div>
-                          <span className="text-sm text-gray-600">Success Rate: </span>
+                          <span className="text-sm text-text-secondary">Success Rate: </span>
                           <span className={`font-medium ${getReputationColor(reputationPercentage)}`}>
                             {reputationPercentage}%
                           </span>
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-text-secondary">
                             {' '}({clinic.reputation.success}/{clinic.reputation.total})
                           </span>
                         </div>
@@ -192,24 +192,24 @@ function PatientView({ walletAddress }: DashboardProps): JSX.Element {
       </div>
 
       {/* Patient Information */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold mb-4">Patient Information</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Patient Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-gray-600">Patient ID</p>
-            <p className="font-medium">P001</p>
+            <p className="text-sm text-text-secondary">Patient ID</p>
+            <p className="font-medium text-text-primary">P001</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Wallet Address</p>
-            <p className="font-medium text-xs">{walletAddress}</p>
+            <p className="text-sm text-text-secondary">Wallet Address</p>
+            <p className="font-medium text-xs text-text-primary">{walletAddress}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Total Claims</p>
-            <p className="font-medium">{claims.length}</p>
+            <p className="text-sm text-text-secondary">Total Claims</p>
+            <p className="font-medium text-text-primary">{claims.length}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Approved Claims</p>
-            <p className="font-medium text-green-600">
+            <p className="text-sm text-text-secondary">Approved Claims</p>
+            <p className="font-medium text-success">
               {claims.filter(c => c.status === 'Approved' || c.status === 'Payment Released').length}
             </p>
           </div>

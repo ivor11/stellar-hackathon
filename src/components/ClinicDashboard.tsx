@@ -66,114 +66,115 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
 
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Approved': return 'bg-green-100 text-green-800';
-      case 'Rejected': return 'bg-red-100 text-red-800';
-      case 'Payment Released': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Pending': return 'bg-warning text-white';
+      case 'Approved': return 'bg-success text-white';
+      case 'Rejected': return 'bg-error text-white';
+      case 'Payment Released': return 'bg-primary text-white';
+      default: return 'bg-gray-200 text-text-secondary';
     }
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Clinic Dashboard</h2>
+    <div className="space-y-8">
+      <h2 className="text-4xl font-bold text-text-primary">Clinic Dashboard</h2>
       
       {!isRegistered ? (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-          <p>Your clinic is not registered. Please register to start submitting claims.</p>
+        <div className="bg-warning text-white px-6 py-4 rounded-lg shadow-md border border-border-color flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-lg">Your clinic is not registered.</p>
+            <p className="text-sm">Please register to start submitting claims.</p>
+          </div>
           <button
             onClick={() => setShowRegistration(true)}
-            className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded"
+            className="bg-white text-warning font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
           >
             Register Clinic
           </button>
         </div>
       ) : (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-          <p>✓ Clinic registered: {clinicData?.name}</p>
-          <p>License: {clinicData?.license_number}</p>
-          <p>Status: {clinicData?.is_verified ? 'Verified' : 'Pending Verification'}</p>
+        <div className="bg-success text-white px-6 py-4 rounded-lg shadow-md border border-border-color">
+          <p className="font-semibold text-lg">✓ Clinic registered: {clinicData?.name}</p>
+          <p className="text-sm">License: {clinicData?.license_number}</p>
+          <p className="text-sm">Status: {clinicData?.is_verified ? 'Verified' : 'Pending Verification'}</p>
         </div>
       )}
 
       {showRegistration && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-xl font-semibold mb-4">Register Clinic</h3>
-          <form onSubmit={handleRegistration}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Clinic Name</label>
-                <input
-                  type="text"
-                  value={registrationForm.name}
-                  onChange={(e) => handleRegistrationChange('name', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">License Number</label>
-                <input
-                  type="text"
-                  value={registrationForm.licenseNumber}
-                  onChange={(e) => handleRegistrationChange('licenseNumber', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  required
-                />
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  type="submit"
-                  className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
-                >
-                  Register
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowRegistration(false)}
-                  className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded"
-                >
-                  Cancel
-                </button>
-              </div>
+        <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+          <h3 className="text-2xl font-semibold mb-4 text-text-primary">Register Clinic</h3>
+          <form onSubmit={handleRegistration} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-text-secondary">Clinic Name</label>
+              <input
+                type="text"
+                value={registrationForm.name}
+                onChange={(e) => handleRegistrationChange('name', e.target.value)}
+                className="w-full p-3 border border-border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-text-secondary">License Number</label>
+              <input
+                type="text"
+                value={registrationForm.licenseNumber}
+                onChange={(e) => handleRegistrationChange('licenseNumber', e.target.value)}
+                className="w-full p-3 border border-border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              />
+            </div>
+            <div className="flex space-x-3">
+              <button
+                type="submit"
+                className="bg-primary hover:bg-blue-700 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+              >
+                Register
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRegistration(false)}
+                className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </div>
       )}
 
       {isRegistered && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-xl font-semibold mb-4">Submit New Claim</h3>
-          <form onSubmit={handleClaimSubmission}>
+        <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+          <h3 className="text-2xl font-semibold mb-4 text-text-primary">Submit New Claim</h3>
+          <form onSubmit={handleClaimSubmission} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Patient ID</label>
+                <label className="block text-sm font-medium mb-1 text-text-secondary">Patient ID</label>
                 <input
                   type="text"
                   value={claimForm.patientId}
                   onChange={(e) => handleClaimChange('patientId', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
+                  className="w-full p-3 border border-border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Service Code</label>
+                <label className="block text-sm font-medium mb-1 text-text-secondary">Service Code</label>
                 <input
                   type="text"
                   value={claimForm.serviceCode}
                   onChange={(e) => handleClaimChange('serviceCode', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
+                  className="w-full p-3 border border-border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="e.g., CHECKUP, SURGERY"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Amount (USDC)</label>
+                <label className="block text-sm font-medium mb-1 text-text-secondary">Amount (USDC)</label>
                 <input
                   type="number"
                   value={claimForm.amount}
                   onChange={(e) => handleClaimChange('amount', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
+                  className="w-full p-3 border border-border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   step="0.01"
                   required
                 />
@@ -181,7 +182,7 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
             </div>
             <button
               type="submit"
-              className="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
+              className="mt-4 bg-success hover:bg-green-700 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
             >
               Submit Claim
             </button>
@@ -189,36 +190,36 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold mb-4">Your Claims</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Your Claims</h3>
         {claims.length === 0 ? (
-          <p className="text-gray-500">No claims submitted yet.</p>
+          <p className="text-text-secondary">No claims submitted yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-2 text-left">Claim ID</th>
-                  <th className="px-4 py-2 text-left">Patient ID</th>
-                  <th className="px-4 py-2 text-left">Service</th>
-                  <th className="px-4 py-2 text-left">Amount</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                  <th className="px-4 py-2 text-left">Date</th>
+                <tr className="bg-secondary">
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Claim ID</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Patient ID</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Service</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Amount</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Status</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {claims.map((claim) => (
-                  <tr key={claim.claim_id} className="border-t">
-                    <td className="px-4 py-2">{claim.claim_id}</td>
-                    <td className="px-4 py-2">{claim.patient_id}</td>
-                    <td className="px-4 py-2">{claim.service_code}</td>
-                    <td className="px-4 py-2">${claim.amount}</td>
-                    <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded text-sm ${getStatusColor(claim.status)}`}>
+                  <tr key={claim.claim_id} className="border-t border-border-color hover:bg-gray-50">
+                    <td className="px-6 py-4">{claim.claim_id}</td>
+                    <td className="px-6 py-4">{claim.patient_id}</td>
+                    <td className="px-6 py-4">{claim.service_code}</td>
+                    <td className="px-6 py-4">${claim.amount}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(claim.status)}`}>
                         {claim.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2">{claim.date}</td>
+                    <td className="px-6 py-4">{claim.date}</td>
                   </tr>
                 ))}
               </tbody>
