@@ -37,12 +37,57 @@ function ClinicDashboard({ walletAddress }: DashboardProps) {
         // Clinic not registered yet, which is fine
         console.log('Clinic not registered yet');
       }
+      
+      // Always try to fetch claims regardless of registration status
+      // This will handle cases where clinic is registered but we want to see existing claims
+      try {
+        await fetchClinicClaims();
+      } catch (error) {
+        console.log('No existing claims or clinic not registered yet');
+      }
     };
 
     if (walletAddress) {
       checkClinicRegistration();
     }
   }, [walletAddress]);
+
+  // Function to fetch claims for this clinic
+  const fetchClinicClaims = async (): Promise<void> => {
+    try {
+      console.log('Fetching claims for clinic:', walletAddress);
+      const clinicClaims = await walletService.getClaimsByClinic(walletAddress);
+      console.log('Clinic claims fetched:', clinicClaims);
+      
+      // Transform contract data to frontend format
+      const transformClaim = (claim: any): Claim => ({
+        claim_id: claim.claim_id,
+        patient_id: claim.patient_id,
+        service_code: claim.service_code,
+        amount: Number(claim.amount) / 10000000, // Convert from stroops
+        clinic: clinicData?.name || walletAddress, // Use clinic name if available
+        date: new Date(Number(claim.date) * 1000).toISOString().split('T')[0], // Convert timestamp
+        status: claim.status === 'Pending' ? 'Pending' as const : 
+               claim.status === 'Approved' ? 'Approved' as const :
+               claim.status === 'Rejected' ? 'Rejected' as const :
+               claim.status === 'Released' ? 'Payment Released' as const : 'Pending' as const
+      });
+      
+      const transformedClaims = Array.isArray(clinicClaims) ? clinicClaims.map(transformClaim) : [];
+      console.log('Transformed clinic claims:', transformedClaims);
+      setClaims(transformedClaims);
+      
+      if (transformedClaims.length > 0) {
+        console.log(`Found ${transformedClaims.length} claims for clinic`);
+      } else {
+        console.log('No claims found for this clinic');
+      }
+    } catch (error) {
+      console.error('Failed to fetch clinic claims:', error);
+      // Don't show error for empty claims, just keep claims empty
+      setClaims([]);
+    }
+  };
 
   // Function to refresh clinic data
   const refreshClinicData = async (): Promise<void> => {
@@ -55,6 +100,8 @@ function ClinicDashboard({ walletAddress }: DashboardProps) {
         setClinicData(metadata);
         console.log('Clinic data refreshed:', metadata);
       }
+      // Also refresh claims
+      await fetchClinicClaims();
     } catch (error) {
       console.error('Failed to refresh clinic data:', error);
       setError(error instanceof Error ? error.message : 'Failed to refresh clinic data');
@@ -123,17 +170,10 @@ function ClinicDashboard({ walletAddress }: DashboardProps) {
       );
       
       console.log('Claim submitted:', result);
-      const newClaim: Claim = {
-        claim_id: Date.now(),
-        patient_id: claimForm.patientId,
-        service_code: claimForm.serviceCode,
-        amount: parseFloat(claimForm.amount),
-        status: 'Pending',
-        date: new Date().toISOString().split('T')[0],
-        clinic: clinicData?.name || 'Unknown Clinic'
-      };
-      setClaims([...claims, newClaim]);
+      
+      // Reset form and refresh claims from contract
       setClaimForm({ patientId: '', serviceCode: '', amount: '' });
+      await fetchClinicClaims();
     } catch (error) {
       console.error('Claim submission failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Claim submission failed';

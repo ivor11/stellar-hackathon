@@ -1,20 +1,76 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardProps, Claim } from '../types';
 import { walletService } from '../services/walletService';
 
 function AdminDashboard({ walletAddress }: DashboardProps) {
-  const [pendingClaims, setPendingClaims] = useState<Claim[]>([
-    { claim_id: 1, patient_id: 'P001', service_code: 'CHECKUP', amount: 100, clinic: 'City Health Clinic', date: '2024-01-15', status: 'Pending' },
-    { claim_id: 2, patient_id: 'P002', service_code: 'SURGERY', amount: 5000, clinic: 'Metro Hospital', date: '2024-01-16', status: 'Pending' },
-    { claim_id: 3, patient_id: 'P003', service_code: 'CONSULTATION', amount: 75, clinic: 'Community Health Center', date: '2024-01-14', status: 'Pending' }
-  ]);
-
+  const [pendingClaims, setPendingClaims] = useState<Claim[]>([]);
   const [approvedClaims, setApprovedClaims] = useState<Claim[]>([]);
   const [clinicToVerify, setClinicToVerify] = useState<string>('');
   const [clinicMetadata, setClinicMetadata] = useState<{ [address: string]: any }>({});
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
+
+  // Fetch claims on component mount
+  useEffect(() => {
+    if (walletAddress) {
+      fetchClaims();
+    }
+  }, [walletAddress]);
+
+  const fetchClaims = async (): Promise<void> => {
+    setLoading(prev => ({ ...prev, fetchClaims: true }));
+    setError('');
+    
+    try {
+      console.log('Fetching claims from contract...');
+      
+      // Fetch pending claims
+      const pendingClaimsResult = await walletService.getClaimsByStatus('Pending');
+      console.log('Pending claims result:', pendingClaimsResult);
+      
+      // Fetch approved claims
+      const approvedClaimsResult = await walletService.getClaimsByStatus('Approved');
+      console.log('Approved claims result:', approvedClaimsResult);
+      
+      // Transform contract data to frontend format
+      const transformClaim = (claim: any): Claim => ({
+        claim_id: claim.claim_id,
+        patient_id: claim.patient_id,
+        service_code: claim.service_code,
+        amount: Number(claim.amount) / 10000000, // Convert from stroops
+        clinic: claim.clinic, // This will be the address, we might want to resolve to name
+        date: new Date(Number(claim.date) * 1000).toISOString().split('T')[0], // Convert timestamp
+        status: claim.status === 'Pending' ? 'Pending' as const : 
+               claim.status === 'Approved' ? 'Approved' as const :
+               claim.status === 'Rejected' ? 'Rejected' as const :
+               claim.status === 'Released' ? 'Payment Released' as const : 'Pending' as const
+      });
+      
+      const transformedPending = Array.isArray(pendingClaimsResult) ? pendingClaimsResult.map(transformClaim) : [];
+      const transformedApproved = Array.isArray(approvedClaimsResult) ? approvedClaimsResult.map(transformClaim) : [];
+      
+      console.log('Transformed pending claims:', transformedPending);
+      console.log('Transformed approved claims:', transformedApproved);
+      
+      setPendingClaims(transformedPending);
+      setApprovedClaims(transformedApproved);
+      
+      console.log('Claims fetched and transformed successfully');
+      
+      // Show success message if claims were found
+      if (transformedPending.length > 0 || transformedApproved.length > 0) {
+        setSuccess(`Found ${transformedPending.length} pending and ${transformedApproved.length} approved claims`);
+      } else {
+        setSuccess('No claims found in the contract yet');
+      }
+    } catch (error) {
+      console.error('Failed to fetch claims:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch claims');
+    } finally {
+      setLoading(prev => ({ ...prev, fetchClaims: false }));
+    }
+  };
 
   const handleInitializeContract = async (): Promise<void> => {
     setLoading(prev => ({ ...prev, init: true }));
@@ -58,12 +114,9 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       const result = await walletService.approveClaim(walletAddress, claimId);
       console.log('Approval successful:', result);
       
-      const claimToApprove = pendingClaims.find(claim => claim.claim_id === claimId);
-      if (claimToApprove) {
-        const updatedClaim: Claim = { ...claimToApprove, status: 'Approved' };
-        setPendingClaims(prev => prev.filter(claim => claim.claim_id !== claimId));
-        setApprovedClaims(prev => [...prev, updatedClaim]);
-      }
+      // Refresh claims to get updated data from contract
+      await fetchClaims();
+      setSuccess(`Claim ${claimId} approved successfully!`);
     } catch (error) {
       console.error('Approval failed:', error);
       setError(error instanceof Error ? error.message : 'Approval failed');
@@ -80,7 +133,9 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       const result = await walletService.rejectClaim(walletAddress, claimId);
       console.log('Rejection successful:', result);
       
-      setPendingClaims(prev => prev.filter(claim => claim.claim_id !== claimId));
+      // Refresh claims to get updated data from contract
+      await fetchClaims();
+      setSuccess(`Claim ${claimId} rejected successfully!`);
     } catch (error) {
       console.error('Rejection failed:', error);
       setError(error instanceof Error ? error.message : 'Rejection failed');
@@ -97,13 +152,9 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       const result = await walletService.releaseClaim(walletAddress, claimId);
       console.log('Payment release successful:', result);
       
-      setApprovedClaims(prev => 
-        prev.map(claim => 
-          claim.claim_id === claimId 
-            ? { ...claim, status: 'Payment Released' }
-            : claim
-        )
-      );
+      // Refresh claims to get updated data from contract
+      await fetchClaims();
+      setSuccess(`Payment for claim ${claimId} released successfully!`);
     } catch (error) {
       console.error('Payment release failed:', error);
       setError(error instanceof Error ? error.message : 'Payment release failed');
@@ -216,9 +267,16 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
           >
             {loading.init ? 'Initializing...' : 'Initialize Contract'}
           </button>
+          <button
+            onClick={fetchClaims}
+            disabled={loading.fetchClaims}
+            className="bg-secondary text-white px-6 py-3 rounded-lg hover:bg-accent transition duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading.fetchClaims ? 'Refreshing...' : 'Refresh Claims'}
+          </button>
         </div>
         <p className="text-sm text-text-secondary mt-2">
-          Check contract health first, then initialize if needed. Initialization only needs to be done once.
+          Check contract health first, then initialize if needed. Use refresh to get the latest claims from the contract.
         </p>
       </div>
       

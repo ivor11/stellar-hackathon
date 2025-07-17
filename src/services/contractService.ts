@@ -824,6 +824,132 @@ export class ContractService {
       };
     }
   }
+
+  // Get all claims by attempting to fetch claims from 1 to a reasonable limit
+  async getAllClaims(): Promise<ContractCallResult> {
+    try {
+      const claims = [];
+      const maxClaimsToCheck = 100; // Reasonable limit to avoid infinite loops
+      let consecutiveFailures = 0;
+      const maxConsecutiveFailures = 5; // Stop after 5 consecutive failures
+      
+      console.log('Fetching all claims...');
+      
+      for (let i = 1; i <= maxClaimsToCheck; i++) {
+        try {
+          const claimResult = await this.getClaim(i);
+          if (claimResult.success && claimResult.result) {
+            claims.push(claimResult.result);
+            consecutiveFailures = 0; // Reset failure counter on success
+            console.log(`Found claim ${i}:`, claimResult.result);
+          } else {
+            consecutiveFailures++;
+            console.log(`Claim ${i} not found or failed to fetch`);
+            
+            // If we've had several consecutive failures, likely no more claims
+            if (consecutiveFailures >= maxConsecutiveFailures) {
+              console.log(`Stopping after ${maxConsecutiveFailures} consecutive failures`);
+              break;
+            }
+          }
+        } catch (error) {
+          consecutiveFailures++;
+          console.log(`Error fetching claim ${i}:`, error);
+          
+          // If we've had several consecutive failures, likely no more claims
+          if (consecutiveFailures >= maxConsecutiveFailures) {
+            console.log(`Stopping after ${maxConsecutiveFailures} consecutive failures`);
+            break;
+          }
+        }
+      }
+      
+      console.log(`Total claims found: ${claims.length}`);
+      
+      return {
+        success: true,
+        result: claims
+      };
+    } catch (error) {
+      console.error('Error in getAllClaims:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get all claims'
+      };
+    }
+  }
+
+  // Get claims by status
+  async getClaimsByStatus(status: string): Promise<ContractCallResult> {
+    try {
+      const allClaimsResult = await this.getAllClaims();
+      
+      if (!allClaimsResult.success) {
+        return allClaimsResult;
+      }
+      
+      console.log('Filtering claims by status:', status);
+      console.log('All claims before filtering:', allClaimsResult.result);
+      
+      const filteredClaims = allClaimsResult.result.filter((claim: any) => {
+        // Map contract status to frontend status
+        let claimStatus = '';
+        if (claim.status === 'Pending') claimStatus = 'Pending';
+        else if (claim.status === 'Approved') claimStatus = 'Approved';
+        else if (claim.status === 'Rejected') claimStatus = 'Rejected';
+        else if (claim.status === 'Released') claimStatus = 'Payment Released';
+        
+        console.log(`Claim ${claim.claim_id} has contract status: ${claim.status}, mapped to: ${claimStatus}, looking for: ${status}`);
+        
+        return claimStatus === status;
+      });
+      
+      console.log('Filtered claims:', filteredClaims);
+      
+      return {
+        success: true,
+        result: filteredClaims
+      };
+    } catch (error) {
+      console.error('Error filtering claims by status:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get claims by status'
+      };
+    }
+  }
+
+  // Get claims by clinic address
+  async getClaimsByClinic(clinicAddress: string): Promise<ContractCallResult> {
+    try {
+      const allClaimsResult = await this.getAllClaims();
+      
+      if (!allClaimsResult.success) {
+        return allClaimsResult;
+      }
+      
+      console.log('Filtering claims by clinic:', clinicAddress);
+      console.log('All claims before filtering:', allClaimsResult.result);
+      
+      const filteredClaims = allClaimsResult.result.filter((claim: any) => {
+        console.log(`Claim ${claim.claim_id} clinic: ${claim.clinic}, looking for: ${clinicAddress}`);
+        return claim.clinic === clinicAddress;
+      });
+      
+      console.log('Filtered claims for clinic:', filteredClaims);
+      
+      return {
+        success: true,
+        result: filteredClaims
+      };
+    } catch (error) {
+      console.error('Error filtering claims by clinic:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get claims by clinic'
+      };
+    }
+  }
 }
 
 export const contractService = new ContractService();

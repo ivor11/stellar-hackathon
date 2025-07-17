@@ -318,6 +318,48 @@ export class FreighterWalletService {
       throw new Error(error instanceof Error ? error.message : 'Failed to get clinic reputation');
     }
   }
+
+  async getAllClaims() {
+    try {
+      const result = await contractService.getAllClaims();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to get all claims');
+      }
+
+      return result.result;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to get all claims');
+    }
+  }
+
+  async getClaimsByStatus(status: string) {
+    try {
+      const result = await contractService.getClaimsByStatus(status);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to get claims by status');
+      }
+
+      return result.result;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to get claims by status');
+    }
+  }
+
+  async getClaimsByClinic(clinicAddress: string) {
+    try {
+      const result = await contractService.getClaimsByClinic(clinicAddress);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to get claims by clinic');
+      }
+
+      return result.result;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to get claims by clinic');
+    }
+  }
 }
 
 export const walletService = new FreighterWalletService();
