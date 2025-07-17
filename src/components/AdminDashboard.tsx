@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DashboardProps, Claim } from '../types';
+import { DashboardProps, Claim, ClinicInfo } from '../types';
 import { walletService } from '../services/walletService';
 
 function AdminDashboard({ walletAddress }: DashboardProps) {
@@ -7,6 +7,7 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
   const [approvedClaims, setApprovedClaims] = useState<Claim[]>([]);
   const [clinicToVerify, setClinicToVerify] = useState<string>('');
   const [clinicMetadata, setClinicMetadata] = useState<{ [address: string]: any }>({});
+  const [verifiedClinics, setVerifiedClinics] = useState<ClinicInfo[]>([]);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
@@ -59,6 +60,31 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       
       setPendingClaims(transformedPending);
       setApprovedClaims(transformedApproved);
+
+      if (allClaimsResult) {
+        const uniqueClinicAddresses = [...new Set(allClaimsResult.map((c: any) => c.clinic))];
+        const clinicPromises = uniqueClinicAddresses.map(async (address: any) => {
+          try {
+            const metadata = await walletService.getClinicMetadata(address);
+            const reputation = await walletService.getClinicReputation(address);
+            return {
+              name: metadata.name,
+              address: address,
+              isVerified: metadata.is_verified,
+              reputation: {
+                success: Number(reputation.success_count),
+                total: Number(reputation.success_count) + Number(reputation.failure_count),
+              },
+            };
+          } catch (e) {
+            console.error(`Failed to fetch info for clinic ${address}`, e);
+            return null;
+          }
+        });
+
+        const clinicsData = (await Promise.all(clinicPromises)).filter(c => c) as ClinicInfo[];
+        setVerifiedClinics(clinicsData);
+      }
       
       // Show success message if claims were found
       if (transformedPending.length > 0 || transformedApproved.length > 0) {
@@ -189,6 +215,16 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
     } finally {
       setLoading(prev => ({ ...prev, [`fetch_${clinicToVerify}`]: false }));
     }
+  };
+
+  const getReputationColor = (percentage: number): string => {
+    if (percentage >= 90) return 'text-success';
+    if (percentage >= 75) return 'text-warning';
+    return 'text-error';
+  };
+
+  const calculateReputationPercentage = (success: number, total: number): number => {
+    return total > 0 ? Math.round((success / total) * 100) : 0;
   };
 
   const getStatusColor = (status: string): string => {
@@ -431,6 +467,53 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Verified Clinics Directory */}
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Verified Clinics Directory</h3>
+        <div className="space-y-4">
+          {verifiedClinics.map((clinic, index) => {
+            const reputationPercentage = calculateReputationPercentage(clinic.reputation.success, clinic.reputation.total);
+            
+            return (
+              <div key={index} className="border border-border-color rounded-lg p-4 bg-secondary">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-lg text-text-primary">{clinic.name}</h4>
+                    <p className="text-sm text-text-secondary">Address: {clinic.address}</p>
+                    
+                    <div className="mt-2 flex items-center space-x-4">
+                      <div className="flex items-center">
+                        {clinic.isVerified ? (
+                          <span className="bg-success text-white px-3 py-1 rounded-full text-sm font-semibold">
+                            ✓ Verified
+                          </span>
+                        ) : (
+                          <span className="bg-warning text-white px-3 py-1 rounded-full text-sm font-semibold">
+                            ⏳ Pending Verification
+                          </span>
+                        )}
+                      </div>
+                      
+                      {clinic.reputation.total > 0 && (
+                        <div>
+                          <span className="text-sm text-text-secondary">Success Rate: </span>
+                          <span className={`font-medium ${getReputationColor(reputationPercentage)}`}>
+                            {reputationPercentage}%
+                          </span>
+                          <span className="text-sm text-text-secondary">
+                            {' '}({clinic.reputation.success}/{clinic.reputation.total})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
