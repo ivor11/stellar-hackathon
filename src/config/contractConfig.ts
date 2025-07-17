@@ -2,7 +2,7 @@
 export const CONTRACT_CONFIG = {
   // This will be updated with the deployed contract address
   // For now using a placeholder - you'll need to deploy the contract and update this
-  CONTRACT_ADDRESS: 'CAJTDW5USU4DXFJWTOPQMCRYJNOJLSBYMJQQ7P63RJ77G35TAYQSNKKC',
+  CONTRACT_ADDRESS: 'CDCXYE6JPZEQSE4ICAAQQNP2WYGXKPY2LV43YFLOZXQ6YA564QO4OSFM',
   
   // Soroban RPC URL for Futurenet
   SOROBAN_RPC_URL: 'https://rpc-futurenet.stellar.org',
@@ -17,6 +17,7 @@ export const CONTRACT_CONFIG = {
 
 export const XDR_TYPES = {
   // Contract method names
+  INIT: 'init',
   REGISTER_CLINIC: 'register_clinic',
   SUBMIT_CLAIM: 'submit_claim',
   APPROVE_CLAIM: 'approve_claim',

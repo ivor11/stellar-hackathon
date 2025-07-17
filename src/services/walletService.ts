@@ -84,12 +84,84 @@ export class FreighterWalletService {
   }
 
   // Smart contract integration methods
+  async fundAccountOnFuturenet(accountId?: string): Promise<string> {
+    try {
+      const { address } = await freighterApi.getAddress();
+      const targetAddress = accountId || address;
+      
+      if (!targetAddress) {
+        throw new Error('No account address provided');
+      }
+
+      // Use Stellar's Futurenet friendbot
+      const fundingUrl = `https://friendbot-futurenet.stellar.org/?addr=${targetAddress}`;
+      const response = await fetch(fundingUrl, { method: 'GET' });
+      
+      if (!response.ok) {
+        throw new Error(`Funding failed: ${response.statusText}`);
+      }
+
+      return `Account ${targetAddress} funded successfully on Futurenet`;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to fund account');
+    }
+  }
+
+  async checkContractHealth(): Promise<string> {
+    try {
+      const result = await contractService.checkContractHealth();
+      if (!result.success) {
+        throw new Error(result.error || 'Contract health check failed');
+      }
+      return result.result || 'Contract is healthy';
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Contract health check failed');
+    }
+  }
+
+  async initializeContract(): Promise<string> {
+    try {
+      // Get current connected address
+      const { address } = await freighterApi.getAddress();
+      if (!address) {
+        throw new Error('Wallet not connected');
+      }
+
+      const result = await contractService.initContract(
+        address,
+        this.signTransaction.bind(this)
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to initialize contract');
+      }
+
+      return result.transactionHash || 'Contract initialization successful';
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to initialize contract');
+    }
+  }
+
   async registerClinic(
     clinicAddress: string,
     name: string,
     licenseNumber: string
   ): Promise<string> {
     try {
+      // First check if we're on the right network
+      console.log('Checking wallet network configuration...');
+      const networkInfo = await this.getNetwork();
+      console.log('Wallet network:', networkInfo);
+      
+      // Verify the address is the same as connected wallet
+      const { address: connectedAddress } = await freighterApi.getAddress();
+      console.log('Connected wallet address:', connectedAddress);
+      console.log('Clinic address parameter:', clinicAddress);
+      
+      if (connectedAddress !== clinicAddress) {
+        console.warn('Address mismatch! Connected wallet address differs from clinic address parameter');
+      }
+
       const result = await contractService.registerClinic(
         clinicAddress,
         name,

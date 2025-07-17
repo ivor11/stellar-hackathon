@@ -49,6 +49,10 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
     setError('');
     
     try {
+      console.log('Starting clinic registration...');
+      console.log('Wallet address:', walletAddress);
+      console.log('Registration form:', registrationForm);
+      
       const result = await walletService.registerClinic(
         walletAddress,
         registrationForm.name,
@@ -68,13 +72,15 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
       console.error('Registration failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       
-      // Check if it's a funding issue (account not found)
+      // Check if it's a funding issue
       if (errorMessage.includes('account not found') || 
           errorMessage.includes('Account not found') || 
           errorMessage.includes('friendbot') ||
-          errorMessage.includes('not found on testnet')) {
+          errorMessage.includes('not found on futurenet') ||
+          errorMessage.includes('Insufficient balance') ||
+          errorMessage.includes('fund your account')) {
         setNeedsFunding(true);
-        setError('Your account needs to be funded with testnet XLM to interact with the smart contract.');
+        setError(`Your account needs to be funded with XLM on Futurenet. Please visit: https://stellar.org/laboratory/#account-creator?network=futurenet and fund address: ${walletAddress}`);
       } else {
         setError(errorMessage);
       }
@@ -116,9 +122,9 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
       if (errorMessage.includes('account not found') || 
           errorMessage.includes('Account not found') || 
           errorMessage.includes('friendbot') ||
-          errorMessage.includes('not found on testnet')) {
+          errorMessage.includes('not found on futurenet')) {
         setNeedsFunding(true);
-        setError('Your account needs to be funded with testnet XLM to interact with the smart contract.');
+        setError('Your account needs to be funded with futurenet XLM to interact with the smart contract.');
       } else {
         setError(errorMessage);
       }

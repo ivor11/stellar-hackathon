@@ -15,6 +15,41 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
   ]);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+
+  const handleInitializeContract = async (): Promise<void> => {
+    setLoading(prev => ({ ...prev, init: true }));
+    setError('');
+    setSuccess('');
+    
+    try {
+      const result = await walletService.initializeContract();
+      console.log('Contract initialization successful:', result);
+      setSuccess('Contract initialized successfully!');
+    } catch (error) {
+      console.error('Contract initialization failed:', error);
+      setError(error instanceof Error ? error.message : 'Contract initialization failed');
+    } finally {
+      setLoading(prev => ({ ...prev, init: false }));
+    }
+  };
+
+  const handleCheckContractHealth = async (): Promise<void> => {
+    setLoading(prev => ({ ...prev, health: true }));
+    setError('');
+    setSuccess('');
+    
+    try {
+      const result = await walletService.checkContractHealth();
+      console.log('Contract health check successful:', result);
+      setSuccess(`Contract health check: ${result}`);
+    } catch (error) {
+      console.error('Contract health check failed:', error);
+      setError(error instanceof Error ? error.message : 'Contract health check failed');
+    } finally {
+      setLoading(prev => ({ ...prev, health: false }));
+    }
+  };
 
   const handleApprove = async (claimId: number): Promise<void> => {
     setLoading(prev => ({ ...prev, [`approve_${claimId}`]: true }));
@@ -114,6 +149,36 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
           <p className="font-semibold">{error}</p>
         </div>
       )}
+
+      {success && (
+        <div className="bg-success text-white px-6 py-4 rounded-lg shadow-md">
+          <p className="font-semibold">{success}</p>
+        </div>
+      )}
+
+      {/* Contract Management */}
+      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
+        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Contract Management</h3>
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={handleCheckContractHealth}
+            disabled={loading.health}
+            className="bg-accent text-white px-6 py-3 rounded-lg hover:bg-primary transition duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading.health ? 'Checking...' : 'Check Contract Health'}
+          </button>
+          <button
+            onClick={handleInitializeContract}
+            disabled={loading.init}
+            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-accent transition duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading.init ? 'Initializing...' : 'Initialize Contract'}
+          </button>
+        </div>
+        <p className="text-sm text-text-secondary mt-2">
+          Check contract health first, then initialize if needed. Initialization only needs to be done once.
+        </p>
+      </div>
       
       {/* System Statistics */}
       <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">

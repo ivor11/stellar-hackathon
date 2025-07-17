@@ -30,6 +30,65 @@ export class ContractService {
     return CONTRACT_CONFIG.NETWORK_PASSPHRASE;
   }
 
+  public getContractAddress(): string {
+    return CONTRACT_CONFIG.CONTRACT_ADDRESS;
+  }
+
+  async checkContractHealth(): Promise<ContractCallResult> {
+    try {
+      // Simple check to see if we can connect to the contract
+      console.log('Checking contract health...');
+      console.log('Contract address:', CONTRACT_CONFIG.CONTRACT_ADDRESS);
+      console.log('Network:', CONTRACT_CONFIG.NETWORK_PASSPHRASE);
+      console.log('RPC URL:', CONTRACT_CONFIG.SOROBAN_RPC_URL);
+      
+      const dummyKeypair = Keypair.random();
+      const dummyAccount = new Account(dummyKeypair.publicKey(), '0');
+      
+      // Try a simple call to see if the contract exists
+      const operation = this.contract.call('get_claim', nativeToScVal(999999, { type: 'u64' }));
+
+      const transaction = new TransactionBuilder(dummyAccount, {
+        fee: '100',
+        networkPassphrase: CONTRACT_CONFIG.NETWORK_PASSPHRASE,
+      })
+        .addOperation(operation)
+        .setTimeout(30)
+        .build();
+
+      const simulationResult = await this.sorobanRpc.simulateTransaction(transaction);
+      
+      console.log('Contract health check simulation result:', simulationResult);
+      
+      if ('error' in simulationResult) {
+        // If error contains "not found" related to contract, contract doesn't exist
+        const errorStr = simulationResult.error.toString();
+        if (errorStr.includes('does not exist') || errorStr.includes('not found')) {
+          return {
+            success: false,
+            error: 'Contract not found. Please check the contract address and ensure it is deployed.'
+          };
+        }
+        // Other errors might be expected (like claim not found)
+        return {
+          success: true,
+          result: 'Contract is reachable'
+        };
+      }
+      
+      return {
+        success: true,
+        result: 'Contract is healthy'
+      };
+    } catch (error) {
+      console.error('Contract health check failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Contract health check failed'
+      };
+    }
+  }
+
   private async buildAndSimulateTransaction(
     sourceAccount: string,
     operation: any
@@ -40,7 +99,7 @@ export class ContractService {
       console.log('Account found:', account);
       
       const transactionBuilder = new TransactionBuilder(account, {
-        fee: '100000', // 0.1 XLM as max fee (reduced from 1 XLM)
+        fee: '1000000', // Increase fee for contract operations
         networkPassphrase: CONTRACT_CONFIG.NETWORK_PASSPHRASE,
       }).setTimeout(300);
 
@@ -63,15 +122,95 @@ export class ContractService {
         if (error.message.includes('account not found') || 
             error.message.includes('Account not found') ||
             (error as any).response?.status === 404) {
-          throw new Error(`Account ${sourceAccount} not found on testnet. Please ensure your wallet is funded with testnet XLM from https://friendbot.stellar.org/`);
+          throw new Error(`Account ${sourceAccount} not found on futurenet. Please ensure your wallet is funded with futurenet XLM from https://stellar.org/laboratory/#account-creator?network=futurenet`);
         }
         throw new Error(`Failed to build transaction: ${error.message}`);
       }
       // Handle non-Error objects that might have response data
       if ((error as any).response?.status === 404) {
-        throw new Error(`Account ${sourceAccount} not found on testnet. Please ensure your wallet is funded with testnet XLM from https://friendbot.stellar.org/`);
+        throw new Error(`Account ${sourceAccount} not found on futurenet. Please ensure your wallet is funded with futurenet XLM from https://stellar.org/laboratory/#account-creator?network=futurenet`);
       }
       throw new Error(`Failed to build transaction: Unknown error`);
+    }
+  }
+
+  async initContract(
+    admin: string,
+    signTransaction: (xdr: string) => Promise<string>
+  ): Promise<ContractCallResult> {
+    try {
+      console.log('Initializing contract...');
+      
+      const operation = this.contract.call(XDR_TYPES.INIT);
+
+      const { transaction } = await this.buildAndSimulateTransaction(
+        admin,
+        operation
+      );
+
+      const signedXDR = await signTransaction(transaction.toXDR());
+      const signedTransaction = TransactionBuilder.fromXDR(
+        signedXDR,
+        CONTRACT_CONFIG.NETWORK_PASSPHRASE
+      );
+
+      const result = await this.sorobanRpc.sendTransaction(signedTransaction);
+      
+      // Check if transaction failed
+      if (result.status === 'ERROR') {
+        console.error('Contract initialization failed:', result.errorResult);
+        throw new Error(`Contract initialization failed. Error: ${result.errorResult}`);
+      }
+
+      console.log('Contract initialized successfully');
+      return {
+        success: true,
+        transactionHash: result.hash,
+        result: true
+      };
+    } catch (error) {
+      console.error('Contract initialization error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
+  async isContractInitialized(): Promise<boolean> {
+    try {
+      // Try to get the claim counter to see if contract is initialized
+      const dummyKeypair = Keypair.random();
+      const dummyAccount = new Account(dummyKeypair.publicKey(), '0');
+      
+      // We'll try to call a simple read operation to check if contract is initialized
+      // Since there's no direct "isInitialized" method, we'll try to access storage
+      const operation = this.contract.call('get_claim', nativeToScVal(1, { type: 'u64' }));
+
+      const transaction = new TransactionBuilder(dummyAccount, {
+        fee: '100',
+        networkPassphrase: CONTRACT_CONFIG.NETWORK_PASSPHRASE,
+      })
+        .addOperation(operation)
+        .setTimeout(30)
+        .build();
+
+      const simulationResult = await this.sorobanRpc.simulateTransaction(transaction);
+      
+      // If we get an error about claim not found, contract is initialized
+      // If we get an error about storage not initialized, contract needs init
+      if ('error' in simulationResult) {
+        const errorStr = simulationResult.error.toString();
+        if (errorStr.includes('claim not found') || errorStr.includes('Claim not found')) {
+          return true; // Contract is initialized, just no claims exist
+        }
+        return false; // Likely not initialized
+      }
+      
+      return true; // If simulation succeeds, contract is initialized
+    } catch (error) {
+      console.error('Error checking contract initialization:', error);
+      return false;
     }
   }
 
@@ -83,26 +222,48 @@ export class ContractService {
   ): Promise<ContractCallResult> {
     try {
       console.log('Registering clinic:', { clinicAddress, name, licenseNumber });
+      console.log('Expected network passphrase:', CONTRACT_CONFIG.NETWORK_PASSPHRASE);
+      console.log('Expected RPC URL:', CONTRACT_CONFIG.SOROBAN_RPC_URL);
+      
+      // Validate inputs
+      if (!clinicAddress || !name || !licenseNumber) {
+        throw new Error('Missing required parameters for clinic registration');
+      }
+      
+      // Validate address format
+      try {
+        new Address(clinicAddress);
+      } catch (e) {
+        throw new Error(`Invalid clinic address format: ${clinicAddress}`);
+      }
       
       // Create operation with explicit typing
       console.log('Creating contract operation...');
       const operation = this.contract.call(
         XDR_TYPES.REGISTER_CLINIC,
         new Address(clinicAddress).toScVal(),
-        nativeToScVal(name),
-        nativeToScVal(licenseNumber)
+        nativeToScVal(name, { type: 'string' }),
+        nativeToScVal(licenseNumber, { type: 'string' })
       );
       console.log('Contract operation created successfully');
 
       console.log('Building and simulating transaction...');
-      const { transaction } = await this.buildAndSimulateTransaction(
+      const { transaction, simulationResult } = await this.buildAndSimulateTransaction(
         clinicAddress,
         operation
       );
       console.log('Transaction built and simulated successfully');
+      
+      // Check simulation result for any issues
+      if (simulationResult.error) {
+        throw new Error(`Transaction simulation failed: ${simulationResult.error}`);
+      }
+      
+      // Prepare the transaction with simulation results
+      const preparedTransaction = rpc.assembleTransaction(transaction, simulationResult).build();
 
       console.log('Requesting transaction signature...');
-      const signedXDR = await signTransaction(transaction.toXDR());
+      const signedXDR = await signTransaction(preparedTransaction.toXDR());
       console.log('Transaction signed successfully');
       
       const signedTransaction = TransactionBuilder.fromXDR(
@@ -113,6 +274,70 @@ export class ContractService {
       console.log('Submitting transaction to network...');
       const result = await this.sorobanRpc.sendTransaction(signedTransaction);
       console.log('Transaction submitted successfully:', result);
+      
+      // Check if transaction failed
+      if (result.status === 'ERROR') {
+        console.error('Transaction failed with error result:', result.errorResult);
+        let errorMessage = 'Transaction failed';
+        
+        try {
+          // Try to decode the error result for more information
+          if (result.errorResult) {
+            console.error('Raw error result:', result.errorResult);
+            // Check if it's a contract error
+            if (result.errorResult && typeof result.errorResult === 'object') {
+              // Try to extract meaningful error information
+              const errorStr = JSON.stringify(result.errorResult, null, 2);
+              console.error('Error result details:', errorStr);
+              
+              // Check for common error patterns
+              if (errorStr.includes('InsufficientBalance') || errorStr.includes('insufficient_balance')) {
+                errorMessage = 'Insufficient balance. Please fund your account with XLM on Futurenet: https://stellar.org/laboratory/#account-creator?network=futurenet';
+              } else if (errorStr.includes('txMalformed') || errorStr.includes('malformed')) {
+                errorMessage = 'Transaction is malformed. This could be due to incorrect parameters or network mismatch. Make sure Freighter is connected to Futurenet network.';
+              } else if (errorStr.includes('storage') || errorStr.includes('Storage')) {
+                errorMessage = 'Contract storage error. The contract may not be properly initialized.';
+              } else if (errorStr.includes('auth') || errorStr.includes('Auth') || errorStr.includes('require_auth')) {
+                errorMessage = 'Authorization failed. Make sure you\'re using the correct wallet address and that Freighter is connected to Futurenet.';
+              } else if (errorStr.includes('account') || errorStr.includes('Account')) {
+                errorMessage = 'Account error. Your account may not be funded on Futurenet. Please fund it at: https://stellar.org/laboratory/#account-creator?network=futurenet';
+              } else {
+                errorMessage = `Transaction failed. Details: ${errorStr}`;
+              }
+            } else {
+              errorMessage = `Transaction failed. Error code: ${result.errorResult}`;
+            }
+          }
+        } catch (decodeError) {
+          console.error('Failed to decode error result:', decodeError);
+        }
+        
+        // Also check if this might be a contract initialization issue
+        if (result.errorResult && JSON.stringify(result.errorResult).includes('storage')) {
+          errorMessage += '\n\nThis might be a contract initialization issue. The contract may need to be initialized first.';
+        }
+        
+        // Try to provide more specific error information
+        if (result.errorResult) {
+          try {
+            // Look for common error patterns
+            const errorStr = JSON.stringify(result.errorResult);
+            if (errorStr.includes('invoke_host_function')) {
+              errorMessage += '\n\nContract invocation failed. This might be due to invalid parameters or contract logic.';
+            }
+            if (errorStr.includes('insufficient_balance')) {
+              errorMessage += '\n\nInsufficient balance to pay transaction fees.';
+            }
+            if (errorStr.includes('auth_not_required')) {
+              errorMessage += '\n\nAuthorization issue. Make sure the wallet is properly connected.';
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
       
       return {
         success: true,

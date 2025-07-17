@@ -22,7 +22,8 @@ const AccountFunder: React.FC<AccountFunderProps> = ({ walletAddress, onFunded }
       
       for (let i = 0; i < fundingAttempts; i++) {
         try {
-          const response = await fetch(`https://friendbot.stellar.org?addr=${walletAddress}`);
+          // Use Futurenet friendbot instead of testnet
+          const response = await fetch(`https://friendbot-futurenet.stellar.org/?addr=${walletAddress}`);
           if (response.ok) {
             successCount++;
           }
@@ -44,7 +45,7 @@ const AccountFunder: React.FC<AccountFunderProps> = ({ walletAddress, onFunded }
         throw new Error('All funding attempts failed');
       }
     } catch (error) {
-      setError('Failed to fund account. Please try again or fund manually at https://friendbot.stellar.org (you may need to fund multiple times for contract operations).');
+      setError('Failed to fund account. Please try again or fund manually at https://stellar.org/laboratory/#account-creator?network=futurenet (you may need to fund multiple times for contract operations).');
     } finally {
       setIsFunding(false);
     }
@@ -58,7 +59,7 @@ const AccountFunder: React.FC<AccountFunderProps> = ({ walletAddress, onFunded }
     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
       <h3 className="text-lg font-semibold text-yellow-800 mb-4">Account Needs Funding</h3>
       <p className="text-yellow-700 mb-4">
-        Your wallet needs testnet XLM to interact with the smart contract. You can fund it automatically or manually.
+        Your wallet needs futurenet XLM to interact with the smart contract. You can fund it automatically or manually.
       </p>
       
       {error && (
@@ -109,7 +110,7 @@ const AccountFunder: React.FC<AccountFunderProps> = ({ walletAddress, onFunded }
         </div>
 
         <p className="text-xs text-yellow-600">
-          Note: This uses testnet XLM which has no real value. The friendbot will give you free testnet XLM for testing.
+          Note: This uses futurenet XLM which has no real value. The friendbot will give you free futurenet XLM for testing.
         </p>
       </div>
     </div>
