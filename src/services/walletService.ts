@@ -360,6 +360,24 @@ export class FreighterWalletService {
       throw new Error(error instanceof Error ? error.message : 'Failed to get claims by clinic');
     }
   }
+
+  async getClaimsByPatient(patientAddress: string) {
+    try {
+      const allClaimsResult = await contractService.getAllClaims();
+      
+      if (!allClaimsResult.success) {
+        throw new Error(allClaimsResult.error || 'Failed to get claims');
+      }
+      
+      const filteredClaims = allClaimsResult.result.filter((claim: any) => {
+        return claim.patient_id === patientAddress;
+      });
+      
+      return filteredClaims;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to get claims by patient');
+    }
+  }
 }
 
 export const walletService = new FreighterWalletService();

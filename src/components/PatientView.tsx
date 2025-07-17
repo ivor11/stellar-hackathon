@@ -1,24 +1,112 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardProps, Claim, ClinicInfo, ClaimStatus } from '../types';
+import { walletService } from '../services/walletService';
 
 function PatientView({ walletAddress }: DashboardProps): JSX.Element {
-  const [claims, setClaims] = useState<Claim[]>([
-    { claim_id: 1, patient_id: 'P001', service_code: 'CHECKUP', amount: 100, clinic: 'City Health Clinic', date: '2024-01-15', status: 'Approved' },
-    { claim_id: 2, patient_id: 'P001', service_code: 'SURGERY', amount: 5000, clinic: 'Metro Hospital', date: '2024-01-16', status: 'Payment Released' },
-    { claim_id: 3, patient_id: 'P001', service_code: 'CONSULTATION', amount: 75, clinic: 'City Health Clinic', date: '2024-01-14', status: 'Rejected' }
-  ]);
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [clinics, setClinics] = useState<ClinicInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const [searchClaimId, setSearchClaimId] = useState<string>('');
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
-  const [clinics, setClinics] = useState<ClinicInfo[]>([
-    { name: 'City Health Clinic', address: 'GXXX...XXXX', isVerified: true, reputation: { success: 85, total: 100 } },
-    { name: 'Metro Hospital', address: 'GYYY...YYYY', isVerified: true, reputation: { success: 92, total: 150 } },
-    { name: 'Community Health Center', address: 'GZZZ...ZZZZ', isVerified: false, reputation: { success: 0, total: 0 } }
-  ]);
 
-  const searchClaim = (): void => {
-    const claim = claims.find(c => c.claim_id.toString() === searchClaimId);
-    setSelectedClaim(claim || null);
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!walletAddress) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const allClaimsResult = await walletService.getAllClaims();
+        if (allClaimsResult) {
+          const patientClaims = allClaimsResult
+            .filter((c: any) => c.patient_id === walletAddress)
+            .map((claim: any): Claim => {
+              const contractStatus = Array.isArray(claim.status) ? claim.status[0] : claim.status;
+              return {
+                claim_id: claim.claim_id,
+                patient_id: claim.patient_id,
+                service_code: claim.service_code,
+                amount: Number(claim.amount) / 10000000,
+                clinic: claim.clinic,
+                date: new Date(Number(claim.date) * 1000).toISOString().split('T')[0],
+                status: contractStatus === 'Pending' ? 'Pending' :
+                       contractStatus === 'Approved' ? 'Approved' :
+                       contractStatus === 'Rejected' ? 'Rejected' :
+                       contractStatus === 'Released' ? 'Payment Released' : 'Pending'
+              };
+            });
+          setClaims(patientClaims);
+
+          const uniqueClinicAddresses = [...new Set(allClaimsResult.map((c: any) => c.clinic))];
+          const clinicPromises = uniqueClinicAddresses.map(async (address: any) => {
+            try {
+              const metadata = await walletService.getClinicMetadata(address);
+              const reputation = await walletService.getClinicReputation(address);
+              return {
+                name: metadata.name,
+                address: address,
+                isVerified: metadata.is_verified,
+                reputation: {
+                  success: Number(reputation.success_count),
+                  total: Number(reputation.success_count) + Number(reputation.failure_count),
+                },
+              };
+            } catch (e) {
+              console.error(`Failed to fetch info for clinic ${address}`, e);
+              return null;
+            }
+          });
+
+          const clinicsData = (await Promise.all(clinicPromises)).filter(c => c) as ClinicInfo[];
+          setClinics(clinicsData);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'An unknown error occurred.');
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [walletAddress]);
+
+  const searchClaim = async (): Promise<void> => {
+    if (!searchClaimId) {
+      setSelectedClaim(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const claimResult = await walletService.getClaim(parseInt(searchClaimId, 10));
+      if (claimResult) {
+        const contractStatus = Array.isArray(claimResult.status) ? claimResult.status[0] : claimResult.status;
+        const formattedClaim: Claim = {
+          claim_id: claimResult.claim_id,
+          patient_id: claimResult.patient_id,
+          service_code: claimResult.service_code,
+          amount: Number(claimResult.amount) / 10000000,
+          clinic: claimResult.clinic,
+          date: new Date(Number(claimResult.date) * 1000).toISOString().split('T')[0],
+          status: contractStatus === 'Pending' ? 'Pending' :
+                 contractStatus === 'Approved' ? 'Approved' :
+                 contractStatus === 'Rejected' ? 'Rejected' :
+                 contractStatus === 'Released' ? 'Payment Released' : 'Pending'
+        };
+        setSelectedClaim(formattedClaim);
+      } else {
+        setSelectedClaim(null);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to search for claim.');
+      setSelectedClaim(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusColor = (status: ClaimStatus): string => {
@@ -45,6 +133,9 @@ function PatientView({ walletAddress }: DashboardProps): JSX.Element {
     <div className="space-y-8">
       <h2 className="text-4xl font-bold text-text-primary">Patient Dashboard</h2>
       
+      {loading && <p>Loading...</p>}
+      {error && <p className="text-error">Error: {error}</p>}
+
       {/* Claim Search */}
       <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
         <h3 className="text-2xl font-semibold mb-4 text-text-primary">Search Claim Status</h3>
@@ -197,7 +288,7 @@ function PatientView({ walletAddress }: DashboardProps): JSX.Element {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-text-secondary">Patient ID</p>
-            <p className="font-medium text-text-primary">P001</p>
+            <p className="font-medium text-text-primary">{walletAddress}</p>
           </div>
           <div>
             <p className="text-sm text-text-secondary">Wallet Address</p>
