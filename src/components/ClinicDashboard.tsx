@@ -60,18 +60,21 @@ function ClinicDashboard({ walletAddress }: DashboardProps) {
       console.log('Clinic claims fetched:', clinicClaims);
       
       // Transform contract data to frontend format
-      const transformClaim = (claim: any): Claim => ({
-        claim_id: claim.claim_id,
-        patient_id: claim.patient_id,
-        service_code: claim.service_code,
-        amount: Number(claim.amount) / 10000000, // Convert from stroops
-        clinic: clinicData?.name || walletAddress, // Use clinic name if available
-        date: new Date(Number(claim.date) * 1000).toISOString().split('T')[0], // Convert timestamp
-        status: claim.status === 'Pending' ? 'Pending' as const : 
-               claim.status === 'Approved' ? 'Approved' as const :
-               claim.status === 'Rejected' ? 'Rejected' as const :
-               claim.status === 'Released' ? 'Payment Released' as const : 'Pending' as const
-      });
+      const transformClaim = (claim: any): Claim => {
+        const contractStatus = Array.isArray(claim.status) ? claim.status[0] : claim.status;
+        return {
+          claim_id: claim.claim_id,
+          patient_id: claim.patient_id,
+          service_code: claim.service_code,
+          amount: Number(claim.amount) / 10000000, // Convert from stroops
+          clinic: clinicData?.name || walletAddress, // Use clinic name if available
+          date: new Date(Number(claim.date) * 1000).toISOString().split('T')[0], // Convert timestamp
+          status: contractStatus === 'Pending' ? 'Pending' as const : 
+                 contractStatus === 'Approved' ? 'Approved' as const :
+                 contractStatus === 'Rejected' ? 'Rejected' as const :
+                 contractStatus === 'Released' ? 'Payment Released' as const : 'Pending' as const
+        };
+      };
       
       const transformedClaims = Array.isArray(clinicClaims) ? clinicClaims.map(transformClaim) : [];
       console.log('Transformed clinic claims:', transformedClaims);
