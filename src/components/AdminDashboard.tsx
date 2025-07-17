@@ -38,38 +38,27 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       console.log('Approved claims result:', approvedClaimsResult);
       
       // Transform contract data to frontend format
-      const transformClaim = (claim: any): Claim => ({
-        claim_id: claim.claim_id,
-        patient_id: claim.patient_id,
-        service_code: claim.service_code,
-        amount: Number(claim.amount) / 10000000, // Convert from stroops
-        clinic: claim.clinic, // This will be the address, we might want to resolve to name
-        date: new Date(Number(claim.date) * 1000).toISOString().split('T')[0], // Convert timestamp
-        status: claim.status === 'Pending' ? 'Pending' as const : 
-               claim.status === 'Approved' ? 'Approved' as const :
-               claim.status === 'Rejected' ? 'Rejected' as const :
-               claim.status === 'Released' ? 'Payment Released' as const : 'Pending' as const
-      });
+      const transformClaim = (claim: any): Claim => {
+        const contractStatus = Array.isArray(claim.status) ? claim.status[0] : claim.status;
+        return {
+          claim_id: claim.claim_id,
+          patient_id: claim.patient_id,
+          service_code: claim.service_code,
+          amount: Number(claim.amount) / 10000000, // Convert from stroops
+          clinic: claim.clinic, // This will be the address, we might want to resolve to name
+          date: new Date(Number(claim.date) * 1000).toISOString().split('T')[0], // Convert timestamp
+          status: contractStatus === 'Pending' ? 'Pending' as const : 
+                 contractStatus === 'Approved' ? 'Approved' as const :
+                 contractStatus === 'Rejected' ? 'Rejected' as const :
+                 contractStatus === 'Released' ? 'Payment Released' as const : 'Pending' as const
+        };
+      };
       
       const transformedPending = Array.isArray(pendingClaimsResult) ? pendingClaimsResult.map(transformClaim) : [];
       const transformedApproved = Array.isArray(approvedClaimsResult) ? approvedClaimsResult.map(transformClaim) : [];
       
-      console.log('Transformed pending claims:', transformedPending);
-      console.log('Transformed approved claims:', transformedApproved);
-      console.log('Setting pending claims state with:', transformedPending);
-      console.log('Setting approved claims state with:', transformedApproved);
-      
       setPendingClaims(transformedPending);
       setApprovedClaims(transformedApproved);
-      
-      console.log('State should be updated now');
-      // Add a small delay to check state after React update
-      setTimeout(() => {
-        console.log('Current pendingClaims state after setState:', pendingClaims);
-        console.log('Current approvedClaims state after setState:', approvedClaims);
-      }, 100);
-      
-      console.log('Claims fetched and transformed successfully');
       
       // Show success message if claims were found
       if (transformedPending.length > 0 || transformedApproved.length > 0) {
@@ -82,40 +71,6 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       setError(error instanceof Error ? error.message : 'Failed to fetch claims');
     } finally {
       setLoading(prev => ({ ...prev, fetchClaims: false }));
-    }
-  };
-
-  const handleInitializeContract = async (): Promise<void> => {
-    setLoading(prev => ({ ...prev, init: true }));
-    setError('');
-    setSuccess('');
-    
-    try {
-      const result = await walletService.initializeContract();
-      console.log('Contract initialization successful:', result);
-      setSuccess('Contract initialized successfully!');
-    } catch (error) {
-      console.error('Contract initialization failed:', error);
-      setError(error instanceof Error ? error.message : 'Contract initialization failed');
-    } finally {
-      setLoading(prev => ({ ...prev, init: false }));
-    }
-  };
-
-  const handleCheckContractHealth = async (): Promise<void> => {
-    setLoading(prev => ({ ...prev, health: true }));
-    setError('');
-    setSuccess('');
-    
-    try {
-      const result = await walletService.checkContractHealth();
-      console.log('Contract health check successful:', result);
-      setSuccess(`Contract health check: ${result}`);
-    } catch (error) {
-      console.error('Contract health check failed:', error);
-      setError(error instanceof Error ? error.message : 'Contract health check failed');
-    } finally {
-      setLoading(prev => ({ ...prev, health: false }));
     }
   };
 
@@ -262,36 +217,7 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
         </div>
       )}
 
-      {/* Contract Management */}
-      <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
-        <h3 className="text-2xl font-semibold mb-4 text-text-primary">Contract Management</h3>
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={handleCheckContractHealth}
-            disabled={loading.health}
-            className="bg-accent text-white px-6 py-3 rounded-lg hover:bg-primary transition duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading.health ? 'Checking...' : 'Check Contract Health'}
-          </button>
-          <button
-            onClick={handleInitializeContract}
-            disabled={loading.init}
-            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-accent transition duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading.init ? 'Initializing...' : 'Initialize Contract'}
-          </button>
-          <button
-            onClick={fetchClaims}
-            disabled={loading.fetchClaims}
-            className="bg-secondary text-white px-6 py-3 rounded-lg hover:bg-accent transition duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading.fetchClaims ? 'Refreshing...' : 'Refresh Claims'}
-          </button>
-        </div>
-        <p className="text-sm text-text-secondary mt-2">
-          Check contract health first, then initialize if needed. Use refresh to get the latest claims from the contract.
-        </p>
-      </div>
+      {/* Contract Management - REMOVED as requested */}
       
       {/* System Statistics */}
       <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
@@ -321,11 +247,6 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       {/* Pending Claims */}
       <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
         <h3 className="text-2xl font-semibold mb-4 text-text-primary">Pending Claims Review</h3>
-        {/* Debug info */}
-        <div className="mb-4 p-2 bg-gray-100 text-xs">
-          <p>Debug: pendingClaims.length = {pendingClaims.length}</p>
-          <p>Debug: pendingClaims = {JSON.stringify(pendingClaims)}</p>
-        </div>
         {pendingClaims.length === 0 ? (
           <p className="text-text-secondary">No pending claims to review.</p>
         ) : (
@@ -380,11 +301,6 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       {/* Approved Claims */}
       <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
         <h3 className="text-2xl font-semibold mb-4 text-text-primary">Approved Claims - Payment Release</h3>
-        {/* Debug info */}
-        <div className="mb-4 p-2 bg-gray-100 text-xs">
-          <p>Debug: approvedClaims.length = {approvedClaims.length}</p>
-          <p>Debug: approvedClaims = {JSON.stringify(approvedClaims)}</p>
-        </div>
         {approvedClaims.length === 0 ? (
           <p className="text-text-secondary">No approved claims pending payment release.</p>
         ) : (
@@ -395,7 +311,9 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
                   <th className="px-6 py-3 text-left text-text-primary font-semibold">Claim ID</th>
                   <th className="px-6 py-3 text-left text-text-primary font-semibold">Patient ID</th>
                   <th className="px-6 py-3 text-left text-text-primary font-semibold">Clinic</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Service</th>
                   <th className="px-6 py-3 text-left text-text-primary font-semibold">Amount</th>
+                  <th className="px-6 py-3 text-left text-text-primary font-semibold">Date</th>
                   <th className="px-6 py-3 text-left text-text-primary font-semibold">Status</th>
                   <th className="px-6 py-3 text-left text-text-primary font-semibold">Actions</th>
                 </tr>
@@ -406,22 +324,22 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
                     <td className="px-6 py-4">{claim.claim_id}</td>
                     <td className="px-6 py-4">{claim.patient_id}</td>
                     <td className="px-6 py-4">{claim.clinic}</td>
+                    <td className="px-6 py-4">{claim.service_code}</td>
                     <td className="px-6 py-4">${claim.amount}</td>
+                    <td className="px-6 py-4">{claim.date}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(claim.status)}`}>
                         {claim.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {claim.status === 'Approved' && (
-                        <button
-                          onClick={() => handleRelease(claim.claim_id)}
-                          disabled={loading[`release_${claim.claim_id}`]}
-                          className="bg-primary hover:bg-blue-700 disabled:bg-blue-300 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
-                        >
-                          {loading[`release_${claim.claim_id}`] ? 'Releasing...' : 'Release Payment'}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleRelease(claim.claim_id)}
+                        disabled={loading[`release_${claim.claim_id}`]}
+                        className="bg-primary hover:bg-blue-700 disabled:bg-blue-300 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
+                      >
+                        {loading[`release_${claim.claim_id}`] ? 'Releasing...' : 'Release Payment'}
+                      </button>
                     </td>
                   </tr>
                 ))}
