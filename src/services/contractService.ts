@@ -724,10 +724,28 @@ export class ContractService {
       }
       
       const result = scValToNative(simulationResult.result.retval);
+
+      // Recursively convert BigInts to strings to avoid serialization errors in frontend
+      const processValue = (value: any): any => {
+        if (typeof value === 'bigint') {
+          return value.toString();
+        }
+        if (Array.isArray(value)) {
+          return value.map(processValue);
+        }
+        if (typeof value === 'object' && value !== null) {
+          return Object.fromEntries(
+            Object.entries(value).map(([key, val]) => [key, processValue(val)])
+          );
+        }
+        return value;
+      };
+
+      const processedResult = processValue(result);
       
       return {
         success: true,
-        result
+        result: processedResult
       };
     } catch (error) {
       return {
@@ -894,12 +912,15 @@ export class ContractService {
       const filteredClaims = allClaimsResult.result.filter((claim: any) => {
         // Map contract status to frontend status
         let claimStatus = '';
-        if (claim.status === 'Pending') claimStatus = 'Pending';
-        else if (claim.status === 'Approved') claimStatus = 'Approved';
-        else if (claim.status === 'Rejected') claimStatus = 'Rejected';
-        else if (claim.status === 'Released') claimStatus = 'Payment Released';
+        // The status from the contract might be an array like `['Pending']`
+        const contractStatus = Array.isArray(claim.status) ? claim.status[0] : claim.status;
+
+        if (contractStatus === 'Pending') claimStatus = 'Pending';
+        else if (contractStatus === 'Approved') claimStatus = 'Approved';
+        else if (contractStatus === 'Rejected') claimStatus = 'Rejected';
+        else if (contractStatus === 'Released') claimStatus = 'Payment Released';
         
-        console.log(`Claim ${claim.claim_id} has contract status: ${claim.status}, mapped to: ${claimStatus}, looking for: ${status}`);
+        console.log(`Claim ${claim.claim_id} has contract status: ${contractStatus}, mapped to: ${claimStatus}, looking for: ${status}`);
         
         return claimStatus === status;
       });

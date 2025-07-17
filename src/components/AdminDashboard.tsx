@@ -25,6 +25,10 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
     try {
       console.log('Fetching claims from contract...');
       
+      // First, let's fetch all claims to see what we have
+      const allClaimsResult = await walletService.getAllClaims();
+      console.log('All claims result:', allClaimsResult);
+      
       // Fetch pending claims
       const pendingClaimsResult = await walletService.getClaimsByStatus('Pending');
       console.log('Pending claims result:', pendingClaimsResult);
@@ -52,9 +56,18 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       
       console.log('Transformed pending claims:', transformedPending);
       console.log('Transformed approved claims:', transformedApproved);
+      console.log('Setting pending claims state with:', transformedPending);
+      console.log('Setting approved claims state with:', transformedApproved);
       
       setPendingClaims(transformedPending);
       setApprovedClaims(transformedApproved);
+      
+      console.log('State should be updated now');
+      // Add a small delay to check state after React update
+      setTimeout(() => {
+        console.log('Current pendingClaims state after setState:', pendingClaims);
+        console.log('Current approvedClaims state after setState:', approvedClaims);
+      }, 100);
       
       console.log('Claims fetched and transformed successfully');
       
@@ -308,6 +321,11 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       {/* Pending Claims */}
       <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
         <h3 className="text-2xl font-semibold mb-4 text-text-primary">Pending Claims Review</h3>
+        {/* Debug info */}
+        <div className="mb-4 p-2 bg-gray-100 text-xs">
+          <p>Debug: pendingClaims.length = {pendingClaims.length}</p>
+          <p>Debug: pendingClaims = {JSON.stringify(pendingClaims)}</p>
+        </div>
         {pendingClaims.length === 0 ? (
           <p className="text-text-secondary">No pending claims to review.</p>
         ) : (
@@ -362,6 +380,11 @@ function AdminDashboard({ walletAddress }: DashboardProps) {
       {/* Approved Claims */}
       <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
         <h3 className="text-2xl font-semibold mb-4 text-text-primary">Approved Claims - Payment Release</h3>
+        {/* Debug info */}
+        <div className="mb-4 p-2 bg-gray-100 text-xs">
+          <p>Debug: approvedClaims.length = {approvedClaims.length}</p>
+          <p>Debug: approvedClaims = {JSON.stringify(approvedClaims)}</p>
+        </div>
         {approvedClaims.length === 0 ? (
           <p className="text-text-secondary">No approved claims pending payment release.</p>
         ) : (
