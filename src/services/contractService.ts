@@ -370,19 +370,40 @@ export class ContractService {
     signTransaction: (xdr: string) => Promise<string>
   ): Promise<ContractCallResult> {
     try {
+      console.log('Submitting claim:', { clinic, patientId, serviceCode, amount });
+      console.log('Expected network passphrase:', CONTRACT_CONFIG.NETWORK_PASSPHRASE);
+      console.log('Expected RPC URL:', CONTRACT_CONFIG.SOROBAN_RPC_URL);
+      
+      // Validate inputs
+      if (!clinic || !patientId || !serviceCode || amount <= 0) {
+        throw new Error('Missing required parameters for claim submission');
+      }
+      
+      // Validate address format
+      try {
+        new Address(clinic);
+      } catch (e) {
+        throw new Error(`Invalid clinic address format: ${clinic}`);
+      }
+      
+      // Create operation with explicit typing
+      console.log('Creating contract operation...');
       const operation = this.contract.call(
         XDR_TYPES.SUBMIT_CLAIM,
         new Address(clinic).toScVal(),
-        nativeToScVal(patientId),
-        nativeToScVal(serviceCode),
-        nativeToScVal(BigInt(amount * 10000000)) // Convert to stroops (7 decimal places)
+        nativeToScVal(patientId, { type: 'string' }),
+        nativeToScVal(serviceCode, { type: 'string' }),
+        nativeToScVal(BigInt(amount * 10000000), { type: 'i128' }) // Convert to stroops (7 decimal places)
       );
+      console.log('Contract operation created successfully');
 
+      console.log('Building and simulating transaction...');
       const { transaction, simulationResult } = await this.buildAndSimulateTransaction(
         clinic,
         operation
       );
-
+      console.log('Transaction built and simulated successfully');
+      
       // Check simulation result for any issues
       if (simulationResult.error) {
         throw new Error(`Transaction simulation failed: ${simulationResult.error}`);
@@ -390,14 +411,87 @@ export class ContractService {
       
       // Prepare the transaction with simulation results
       const preparedTransaction = rpc.assembleTransaction(transaction, simulationResult).build();
+      console.log('Transaction prepared successfully');
 
+      console.log('Signing transaction...');
       const signedXDR = await signTransaction(preparedTransaction.toXDR());
       const signedTransaction = TransactionBuilder.fromXDR(
         signedXDR,
         CONTRACT_CONFIG.NETWORK_PASSPHRASE
       );
+      console.log('Transaction signed successfully');
 
+      console.log('Submitting signed transaction...');
       const result = await this.sorobanRpc.sendTransaction(signedTransaction);
+      console.log('Submit transaction result:', result);
+      
+      // Check for transaction errors
+      if ('error' in result) {
+        console.error('Transaction submission error:', result.error);
+        throw new Error(`Transaction submission failed: ${result.error}`);
+      }
+      
+      // Check if transaction failed
+      if ('error' in result || (result as any).status === 'ERROR' || (result as any).status === 'FAILED') {
+        console.error('Transaction failed with status:', (result as any).status);
+        
+        let errorMessage = 'Transaction failed';
+        
+        // Try to decode error details
+        try {
+          const errorResult = (result as any).errorResult;
+          if (errorResult) {
+            console.error('Transaction error result:', errorResult);
+            const errorStr = JSON.stringify(errorResult);
+            
+            // Check for common error patterns
+            if (errorStr.includes('InsufficientBalance') || errorStr.includes('insufficient_balance')) {
+              errorMessage = 'Insufficient balance. Please fund your account with XLM on Futurenet: https://stellar.org/laboratory/#account-creator?network=futurenet';
+            } else if (errorStr.includes('txMalformed') || errorStr.includes('malformed')) {
+              errorMessage = 'Transaction is malformed. This could be due to incorrect parameters or network mismatch. Make sure Freighter is connected to Futurenet network.';
+            } else if (errorStr.includes('storage') || errorStr.includes('Storage')) {
+              errorMessage = 'Contract storage error. The contract may not be properly initialized.';
+            } else if (errorStr.includes('auth') || errorStr.includes('Auth') || errorStr.includes('require_auth')) {
+              errorMessage = 'Authorization failed. Make sure you\'re using the correct wallet address and that Freighter is connected to Futurenet.';
+            } else if (errorStr.includes('account') || errorStr.includes('Account')) {
+              errorMessage = 'Account error. Your account may not be funded on Futurenet. Please fund it at: https://stellar.org/laboratory/#account-creator?network=futurenet';
+            } else {
+              errorMessage = `Transaction failed. Details: ${errorStr}`;
+            }
+          } else {
+            errorMessage = `Transaction failed. Error code: ${(result as any).errorResult}`;
+          }
+        } catch (decodeError) {
+          console.error('Failed to decode error result:', decodeError);
+        }
+        
+        // Also check if this might be a contract initialization issue
+        const errorResult = (result as any).errorResult;
+        if (errorResult && JSON.stringify(errorResult).includes('storage')) {
+          errorMessage += '\n\nThis might be a contract initialization issue. The contract may need to be initialized first.';
+        }
+        
+        // Try to provide more specific error information
+        if (errorResult) {
+          try {
+            // Look for common error patterns
+            const errorStr = JSON.stringify(errorResult);
+            if (errorStr.includes('invoke_host_function')) {
+              errorMessage += '\n\nContract invocation failed. This might be due to invalid parameters or contract logic.';
+            }
+            if (errorStr.includes('insufficient_balance')) {
+              errorMessage += '\n\nInsufficient balance to pay transaction fees.';
+            }
+            if (errorStr.includes('auth_not_required')) {
+              errorMessage += '\n\nAuthorization issue. Make sure the wallet is properly connected.';
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
 
       return {
         success: true,
@@ -405,6 +499,8 @@ export class ContractService {
         result: result.hash // Return transaction hash as claim ID reference
       };
     } catch (error) {
+      console.error('Full submit claim error:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
