@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardProps, ClinicMetadata, Claim, ClinicRegistrationForm, ClaimSubmissionForm } from '../types';
+import { walletService } from '../services/walletService';
+import AccountFunder from './AccountFunder';
 
 function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
@@ -16,12 +18,44 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
     amount: ''
   });
 
+  const [registrationLoading, setRegistrationLoading] = useState<boolean>(false);
+  const [claimLoading, setClaimLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [needsFunding, setNeedsFunding] = useState<boolean>(false);
+
+  // Check if clinic is already registered on component mount
+  useEffect(() => {
+    const checkClinicRegistration = async () => {
+      try {
+        const metadata = await walletService.getClinicMetadata(walletAddress);
+        if (metadata) {
+          setIsRegistered(true);
+          setClinicData(metadata);
+        }
+      } catch (error) {
+        // Clinic not registered yet, which is fine
+        console.log('Clinic not registered yet');
+      }
+    };
+
+    if (walletAddress) {
+      checkClinicRegistration();
+    }
+  }, [walletAddress]);
+
   const handleRegistration = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+    setRegistrationLoading(true);
+    setError('');
+    
     try {
-      // TODO: Integrate with smart contract
-      console.log('Registering clinic:', registrationForm);
-      // Mock registration success
+      const result = await walletService.registerClinic(
+        walletAddress,
+        registrationForm.name,
+        registrationForm.licenseNumber
+      );
+      
+      console.log('Registration successful:', result);
       setIsRegistered(true);
       setClinicData({
         name: registrationForm.name,
@@ -32,14 +66,37 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
       setShowRegistration(false);
     } catch (error) {
       console.error('Registration failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      
+      // Check if it's a funding issue (account not found)
+      if (errorMessage.includes('account not found') || 
+          errorMessage.includes('Account not found') || 
+          errorMessage.includes('friendbot') ||
+          errorMessage.includes('not found on testnet')) {
+        setNeedsFunding(true);
+        setError('Your account needs to be funded with testnet XLM to interact with the smart contract.');
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setRegistrationLoading(false);
     }
   };
 
   const handleClaimSubmission = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+    setClaimLoading(true);
+    setError('');
+    
     try {
-      // TODO: Integrate with smart contract
-      console.log('Submitting claim:', claimForm);
+      const result = await walletService.submitClaim(
+        walletAddress,
+        claimForm.patientId,
+        claimForm.serviceCode,
+        parseFloat(claimForm.amount)
+      );
+      
+      console.log('Claim submitted:', result);
       const newClaim: Claim = {
         claim_id: Date.now(),
         patient_id: claimForm.patientId,
@@ -53,6 +110,20 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
       setClaimForm({ patientId: '', serviceCode: '', amount: '' });
     } catch (error) {
       console.error('Claim submission failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Claim submission failed';
+      
+      // Check if it's a funding issue (account not found)
+      if (errorMessage.includes('account not found') || 
+          errorMessage.includes('Account not found') || 
+          errorMessage.includes('friendbot') ||
+          errorMessage.includes('not found on testnet')) {
+        setNeedsFunding(true);
+        setError('Your account needs to be funded with testnet XLM to interact with the smart contract.');
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setClaimLoading(false);
     }
   };
 
@@ -77,6 +148,22 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
   return (
     <div className="space-y-8">
       <h2 className="text-4xl font-bold text-text-primary">Clinic Dashboard</h2>
+      
+      {error && (
+        <div className="bg-error text-white px-6 py-4 rounded-lg shadow-md">
+          <p className="font-semibold">{error}</p>
+        </div>
+      )}
+      
+      {needsFunding && (
+        <AccountFunder 
+          walletAddress={walletAddress} 
+          onFunded={() => {
+            setNeedsFunding(false);
+            setError('');
+          }} 
+        />
+      )}
       
       {!isRegistered ? (
         <div className="bg-warning text-white px-6 py-4 rounded-lg shadow-md border border-border-color flex items-center justify-between">
@@ -126,14 +213,16 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="bg-primary hover:bg-blue-700 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                disabled={registrationLoading}
+                className="bg-primary hover:bg-blue-700 disabled:bg-blue-300 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
               >
-                Register
+                {registrationLoading ? 'Registering...' : 'Register'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowRegistration(false)}
-                className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                disabled={registrationLoading}
+                className="bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
               >
                 Cancel
               </button>
@@ -182,9 +271,10 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
             </div>
             <button
               type="submit"
-              className="mt-4 bg-success hover:bg-green-700 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+              disabled={claimLoading}
+              className="mt-4 bg-success hover:bg-green-700 disabled:bg-green-300 text-white py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
             >
-              Submit Claim
+              {claimLoading ? 'Submitting...' : 'Submit Claim'}
             </button>
           </form>
         </div>

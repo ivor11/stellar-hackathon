@@ -1,4 +1,5 @@
 import freighterApi from '@stellar/freighter-api';
+import { contractService } from './contractService';
 
 export interface WalletState {
   isConnected: boolean;
@@ -54,11 +55,11 @@ export class FreighterWalletService {
     }
   }
 
-  // Sign a transaction (for future smart contract integration)
+  // Sign a transaction (for smart contract integration)
   async signTransaction(xdr: string): Promise<string> {
     try {
-      const { signedXDR } = await freighterApi.signTransaction(xdr);
-      return signedXDR;
+      const { signedTxXdr } = await freighterApi.signTransaction(xdr);
+      return signedTxXdr;
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Failed to sign transaction');
     }
@@ -80,14 +81,28 @@ export class FreighterWalletService {
     return `${address.slice(0, 6)}...${address.slice(-6)}`;
   }
 
-  // Placeholder methods for health insurance contract integration
+  // Smart contract integration methods
   async registerClinic(
     clinicAddress: string,
     name: string,
     licenseNumber: string
   ): Promise<string> {
-    // TODO: Implement smart contract call for clinic registration
-    throw new Error('Smart contract integration pending');
+    try {
+      const result = await contractService.registerClinic(
+        clinicAddress,
+        name,
+        licenseNumber,
+        this.signTransaction.bind(this)
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to register clinic');
+      }
+
+      return result.transactionHash || 'Registration successful';
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to register clinic');
+    }
   }
 
   async submitClaim(
@@ -96,28 +111,138 @@ export class FreighterWalletService {
     serviceCode: string,
     amount: number
   ): Promise<string> {
-    // TODO: Implement smart contract call for claim submission
-    throw new Error('Smart contract integration pending');
+    try {
+      const result = await contractService.submitClaim(
+        clinic,
+        patientId,
+        serviceCode,
+        amount,
+        this.signTransaction.bind(this)
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to submit claim');
+      }
+
+      return result.transactionHash || 'Claim submitted successfully';
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to submit claim');
+    }
   }
 
   async approveClaim(admin: string, claimId: number): Promise<string> {
-    // TODO: Implement smart contract call for claim approval
-    throw new Error('Smart contract integration pending');
+    try {
+      const result = await contractService.approveClaim(
+        admin,
+        claimId,
+        this.signTransaction.bind(this)
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to approve claim');
+      }
+
+      return result.transactionHash || 'Claim approved successfully';
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to approve claim');
+    }
   }
 
   async rejectClaim(admin: string, claimId: number): Promise<string> {
-    // TODO: Implement smart contract call for claim rejection
-    throw new Error('Smart contract integration pending');
+    try {
+      const result = await contractService.rejectClaim(
+        admin,
+        claimId,
+        this.signTransaction.bind(this)
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to reject claim');
+      }
+
+      return result.transactionHash || 'Claim rejected successfully';
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to reject claim');
+    }
   }
 
   async releaseClaim(admin: string, claimId: number): Promise<string> {
-    // TODO: Implement smart contract call for payment release
-    throw new Error('Smart contract integration pending');
+    try {
+      const result = await contractService.releaseClaim(
+        admin,
+        claimId,
+        this.signTransaction.bind(this)
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to release claim payment');
+      }
+
+      return result.transactionHash || 'Payment released successfully';
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to release claim payment');
+    }
   }
 
   async verifyClinic(admin: string, clinicAddress: string): Promise<string> {
-    // TODO: Implement smart contract call for clinic verification
-    throw new Error('Smart contract integration pending');
+    try {
+      const result = await contractService.verifyClinic(
+        admin,
+        clinicAddress,
+        this.signTransaction.bind(this)
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to verify clinic');
+      }
+
+      return result.transactionHash || 'Clinic verified successfully';
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to verify clinic');
+    }
+  }
+
+  // Read-only methods for querying contract state
+  async getClaim(claimId: number) {
+    try {
+      const result = await contractService.getClaim(claimId);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to get claim data');
+      }
+
+      return result.result;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to get claim data');
+    }
+  }
+
+  async getClinicMetadata(clinicAddress: string) {
+    try {
+      const result = await contractService.getClinicMetadata(clinicAddress);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to get clinic metadata');
+      }
+
+      return result.result;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to get clinic metadata');
+    }
+  }
+
+  async getClinicReputation(clinicAddress: string) {
+    try {
+      const result = await contractService.getClinicReputation(clinicAddress);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to get clinic reputation');
+      }
+
+      return result.result;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to get clinic reputation');
+    }
   }
 }
 

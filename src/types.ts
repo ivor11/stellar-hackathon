@@ -23,7 +23,7 @@ export interface Reputation {
 
 export type ClaimStatus = 'Pending' | 'Approved' | 'Rejected' | 'Payment Released';
 
-export type UserType = 'clinic' | 'admin' | 'patient' | '';
+export type UserType = 'clinic' | 'admin' | 'patient' | 'tester' | '';
 
 // Form types
 export interface ClinicRegistrationForm {

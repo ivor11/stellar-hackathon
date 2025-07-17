@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DashboardProps, Claim, ClinicInfo } from '../types';
+import { walletService } from '../services/walletService';
 
 function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
   const [pendingClaims, setPendingClaims] = useState<Claim[]>([
@@ -12,11 +13,16 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
   const [pendingClinics, setPendingClinics] = useState<ClinicInfo[]>([
     { name: 'Community Health Center', address: 'GZZZ...ZZZZ', isVerified: false, reputation: { success: 0, total: 0 } }
   ]);
+  const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
+  const [error, setError] = useState<string>('');
 
   const handleApprove = async (claimId: number): Promise<void> => {
+    setLoading(prev => ({ ...prev, [`approve_${claimId}`]: true }));
+    setError('');
+    
     try {
-      // TODO: Integrate with smart contract
-      console.log('Approving claim:', claimId);
+      const result = await walletService.approveClaim(walletAddress, claimId);
+      console.log('Approval successful:', result);
       
       const claimToApprove = pendingClaims.find(claim => claim.claim_id === claimId);
       if (claimToApprove) {
@@ -26,24 +32,36 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
       }
     } catch (error) {
       console.error('Approval failed:', error);
+      setError(error instanceof Error ? error.message : 'Approval failed');
+    } finally {
+      setLoading(prev => ({ ...prev, [`approve_${claimId}`]: false }));
     }
   };
 
   const handleReject = async (claimId: number): Promise<void> => {
+    setLoading(prev => ({ ...prev, [`reject_${claimId}`]: true }));
+    setError('');
+    
     try {
-      // TODO: Integrate with smart contract
-      console.log('Rejecting claim:', claimId);
+      const result = await walletService.rejectClaim(walletAddress, claimId);
+      console.log('Rejection successful:', result);
       
       setPendingClaims(prev => prev.filter(claim => claim.claim_id !== claimId));
     } catch (error) {
       console.error('Rejection failed:', error);
+      setError(error instanceof Error ? error.message : 'Rejection failed');
+    } finally {
+      setLoading(prev => ({ ...prev, [`reject_${claimId}`]: false }));
     }
   };
 
   const handleRelease = async (claimId: number): Promise<void> => {
+    setLoading(prev => ({ ...prev, [`release_${claimId}`]: true }));
+    setError('');
+    
     try {
-      // TODO: Integrate with smart contract
-      console.log('Releasing payment for claim:', claimId);
+      const result = await walletService.releaseClaim(walletAddress, claimId);
+      console.log('Payment release successful:', result);
       
       setApprovedClaims(prev => 
         prev.map(claim => 
@@ -54,17 +72,26 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
       );
     } catch (error) {
       console.error('Payment release failed:', error);
+      setError(error instanceof Error ? error.message : 'Payment release failed');
+    } finally {
+      setLoading(prev => ({ ...prev, [`release_${claimId}`]: false }));
     }
   };
 
   const handleVerifyClinic = async (clinicAddress: string): Promise<void> => {
+    setLoading(prev => ({ ...prev, [`verify_${clinicAddress}`]: true }));
+    setError('');
+    
     try {
-      // TODO: Integrate with smart contract
-      console.log('Verifying clinic:', clinicAddress);
+      const result = await walletService.verifyClinic(walletAddress, clinicAddress);
+      console.log('Clinic verification successful:', result);
       
       setPendingClinics(prev => prev.filter(clinic => clinic.address !== clinicAddress));
     } catch (error) {
       console.error('Clinic verification failed:', error);
+      setError(error instanceof Error ? error.message : 'Clinic verification failed');
+    } finally {
+      setLoading(prev => ({ ...prev, [`verify_${clinicAddress}`]: false }));
     }
   };
 
@@ -81,6 +108,12 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
   return (
     <div className="space-y-8">
       <h2 className="text-4xl font-bold text-text-primary">Admin Dashboard</h2>
+      
+      {error && (
+        <div className="bg-error text-white px-6 py-4 rounded-lg shadow-md">
+          <p className="font-semibold">{error}</p>
+        </div>
+      )}
       
       {/* System Statistics */}
       <div className="bg-white rounded-lg shadow-lg p-6 border border-border-color">
@@ -139,15 +172,17 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleApprove(claim.claim_id)}
-                          className="bg-success hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
+                          disabled={loading[`approve_${claim.claim_id}`]}
+                          className="bg-success hover:bg-green-700 disabled:bg-green-300 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
                         >
-                          Approve
+                          {loading[`approve_${claim.claim_id}`] ? 'Approving...' : 'Approve'}
                         </button>
                         <button
                           onClick={() => handleReject(claim.claim_id)}
-                          className="bg-error hover:bg-red-700 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
+                          disabled={loading[`reject_${claim.claim_id}`]}
+                          className="bg-error hover:bg-red-700 disabled:bg-red-300 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
                         >
-                          Reject
+                          {loading[`reject_${claim.claim_id}`] ? 'Rejecting...' : 'Reject'}
                         </button>
                       </div>
                     </td>
@@ -193,9 +228,10 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
                       {claim.status === 'Approved' && (
                         <button
                           onClick={() => handleRelease(claim.claim_id)}
-                          className="bg-primary hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
+                          disabled={loading[`release_${claim.claim_id}`]}
+                          className="bg-primary hover:bg-blue-700 disabled:bg-blue-300 text-white py-2 px-4 rounded-lg text-sm transition-transform transform hover:scale-105"
                         >
-                          Release Payment
+                          {loading[`release_${claim.claim_id}`] ? 'Releasing...' : 'Release Payment'}
                         </button>
                       )}
                     </td>
@@ -226,9 +262,10 @@ function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
                   </div>
                   <button
                     onClick={() => handleVerifyClinic(clinic.address)}
-                    className="bg-success hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-transform transform hover:scale-105"
+                    disabled={loading[`verify_${clinic.address}`]}
+                    className="bg-success hover:bg-green-700 disabled:bg-green-300 text-white py-2 px-4 rounded-lg transition-transform transform hover:scale-105"
                   >
-                    Verify Clinic
+                    {loading[`verify_${clinic.address}`] ? 'Verifying...' : 'Verify Clinic'}
                   </button>
                 </div>
               </div>

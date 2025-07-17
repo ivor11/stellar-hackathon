@@ -4,10 +4,11 @@ import ConnectWallet from './components/ConnectWallet';
 import ClinicDashboard from './components/ClinicDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import PatientView from './components/PatientView';
+import ContractTester from './components/ContractTester';
 import { UserType } from './types';
 import { walletService } from './services/walletService';
 
-function App(): JSX.Element {
+function App() {
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [userType, setUserType] = useState<UserType>('');
 
@@ -51,6 +52,12 @@ function App(): JSX.Element {
                   >
                     Patient View
                   </button>
+                  <button
+                    onClick={() => setUserType('tester')}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
+                  >
+                    🧪 Contract Tester
+                  </button>
                 </div>
               </div>
             ) : (
@@ -67,6 +74,7 @@ function App(): JSX.Element {
                 {userType === 'clinic' && <ClinicDashboard walletAddress={walletAddress} />}
                 {userType === 'admin' && <AdminDashboard walletAddress={walletAddress} />}
                 {userType === 'patient' && <PatientView walletAddress={walletAddress} />}
+                {userType === 'tester' && <ContractTester />}
               </div>
             )}
           </div>
