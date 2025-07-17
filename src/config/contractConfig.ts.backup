@@ -2,17 +2,17 @@
 export const CONTRACT_CONFIG = {
   // This will be updated with the deployed contract address
   // For now using a placeholder - you'll need to deploy the contract and update this
-  CONTRACT_ADDRESS: 'CAO7OM2C7WEOLHZRNJH3U6JWNM5HTSIWTNSYOCOTW2MFBTKSA2BPCC5B',
+  CONTRACT_ADDRESS: 'CAJBVQQTOIEWOJMWDBUCKM3W3U7FORBFACWLSDCEX6Z6TKNC27BGIDSH',
   
-  // Soroban RPC URL for Testnet
-  SOROBAN_RPC_URL: 'https://soroban-testnet.stellar.org',
+  // Soroban RPC URL for Futurenet
+  SOROBAN_RPC_URL: 'https://rpc-futurenet.stellar.org',
   
-  // Network passphrase for Testnet
-  NETWORK_PASSPHRASE: 'Test SDF Network ; September 2015',
+  // Network passphrase for Futurenet
+  NETWORK_PASSPHRASE: 'Test SDF Future Network ; October 2022',
   
-  // Alternative for Futurenet
-  // SOROBAN_RPC_URL: 'https://rpc-futurenet.stellar.org',
-  // NETWORK_PASSPHRASE: 'Test SDF Future Network ; October 2022',
+  // Alternative for Testnet
+  // SOROBAN_RPC_URL: 'https://soroban-testnet.stellar.org',
+  // NETWORK_PASSPHRASE: 'Test SDF Network ; September 2015',
 };
 
 export const XDR_TYPES = {

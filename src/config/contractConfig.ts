@@ -2,7 +2,7 @@
 export const CONTRACT_CONFIG = {
   // This will be updated with the deployed contract address
   // For now using a placeholder - you'll need to deploy the contract and update this
-  CONTRACT_ADDRESS: 'CAOROFQKSNAUZNBXGIIGXPW75HWVIS3XWPGNHWNRAZUL4F4KKC6ULU23',
+  CONTRACT_ADDRESS: 'CAJTDW5USU4DXFJWTOPQMCRYJNOJLSBYMJQQ7P63RJ77G35TAYQSNKKC',
   
   // Soroban RPC URL for Futurenet
   SOROBAN_RPC_URL: 'https://rpc-futurenet.stellar.org',
