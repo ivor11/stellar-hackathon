@@ -7,6 +7,7 @@ import PatientView from './components/PatientView';
 import ContractTester from './components/ContractTester';
 import { UserType } from './types';
 import { walletService } from './services/walletService';
+import stellarBanner from './assets/stellar-banner.png';
 
 function App() {
   const [walletAddress, setWalletAddress] = useState<string>('');
@@ -31,33 +32,35 @@ function App() {
         ) : (
           <div>
             {!userType ? (
-              <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg mx-auto">
-                <h2 className="text-2xl font-semibold mb-6 text-center text-text-primary">Select Your Role</h2>
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setUserType('clinic')}
-                    className="w-full bg-primary hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
-                  >
-                    Clinic Dashboard
-                  </button>
-                  <button
-                    onClick={() => setUserType('admin')}
-                    className="w-full bg-accent hover:bg-teal-500 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
-                  >
-                    Admin Dashboard
-                  </button>
-                  <button
-                    onClick={() => setUserType('patient')}
-                    className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
-                  >
-                    Patient View
-                  </button>
-                  <button
-                    onClick={() => setUserType('tester')}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
-                  >
-                    🧪 Contract Tester
-                  </button>
+              <div className="flex flex-row items-center justify-center space-x-12 mt-16">
+                {/* Left side */}
+                <div className="text-center">
+                  <h1 className="text-5xl font-bold text-primary mb-4">Stellar Health</h1>
+                  <img src={stellarBanner} alt="Stellar Health Banner" className="w-96 rounded-lg shadow-lg"/>
+                </div>
+
+                {/* Right side */}
+                <div className="bg-white rounded-lg shadow-lg p-8 w-96">
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => setUserType('clinic')}
+                      className="w-full bg-primary hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
+                    >
+                      Clinic Dashboard
+                    </button>
+                    <button
+                      onClick={() => setUserType('admin')}
+                      className="w-full bg-accent hover:bg-teal-500 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
+                    >
+                      Admin Dashboard
+                    </button>
+                    <button
+                      onClick={() => setUserType('patient')}
+                      className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
+                    >
+                      Patient View
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
