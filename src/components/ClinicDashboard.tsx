@@ -3,7 +3,7 @@ import { DashboardProps, ClinicMetadata, Claim, ClinicRegistrationForm, ClaimSub
 import { walletService } from '../services/walletService';
 import AccountFunder from './AccountFunder';
 
-function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
+function ClinicDashboard({ walletAddress }: DashboardProps) {
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
   const [clinicData, setClinicData] = useState<ClinicMetadata | null>(null);
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -20,6 +20,7 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
 
   const [registrationLoading, setRegistrationLoading] = useState<boolean>(false);
   const [claimLoading, setClaimLoading] = useState<boolean>(false);
+  const [refreshLoading, setRefreshLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [needsFunding, setNeedsFunding] = useState<boolean>(false);
 
@@ -42,6 +43,25 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
       checkClinicRegistration();
     }
   }, [walletAddress]);
+
+  // Function to refresh clinic data
+  const refreshClinicData = async (): Promise<void> => {
+    setRefreshLoading(true);
+    setError('');
+    
+    try {
+      const metadata = await walletService.getClinicMetadata(walletAddress);
+      if (metadata) {
+        setClinicData(metadata);
+        console.log('Clinic data refreshed:', metadata);
+      }
+    } catch (error) {
+      console.error('Failed to refresh clinic data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to refresh clinic data');
+    } finally {
+      setRefreshLoading(false);
+    }
+  };
 
   const handleRegistration = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -186,9 +206,20 @@ function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
         </div>
       ) : (
         <div className="bg-success text-white px-6 py-4 rounded-lg shadow-md border border-border-color">
-          <p className="font-semibold text-lg">✓ Clinic registered: {clinicData?.name}</p>
-          <p className="text-sm">License: {clinicData?.license_number}</p>
-          <p className="text-sm">Status: {clinicData?.is_verified ? 'Verified' : 'Pending Verification'}</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="font-semibold text-lg">✓ Clinic registered: {clinicData?.name}</p>
+              <p className="text-sm">License: {clinicData?.license_number}</p>
+              <p className="text-sm">Status: {clinicData?.is_verified ? 'Verified' : 'Pending Verification'}</p>
+            </div>
+            <button
+              onClick={refreshClinicData}
+              disabled={refreshLoading}
+              className="bg-white text-success px-3 py-1 rounded text-sm font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {refreshLoading ? 'Refreshing...' : 'Refresh Status'}
+            </button>
+          </div>
         </div>
       )}
 

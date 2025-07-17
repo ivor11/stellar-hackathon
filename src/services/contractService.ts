@@ -143,12 +143,20 @@ export class ContractService {
       
       const operation = this.contract.call(XDR_TYPES.INIT);
 
-      const { transaction } = await this.buildAndSimulateTransaction(
+      const { transaction, simulationResult } = await this.buildAndSimulateTransaction(
         admin,
         operation
       );
 
-      const signedXDR = await signTransaction(transaction.toXDR());
+      // Check simulation result for any issues
+      if (simulationResult.error) {
+        throw new Error(`Transaction simulation failed: ${simulationResult.error}`);
+      }
+      
+      // Prepare the transaction with simulation results
+      const preparedTransaction = rpc.assembleTransaction(transaction, simulationResult).build();
+
+      const signedXDR = await signTransaction(preparedTransaction.toXDR());
       const signedTransaction = TransactionBuilder.fromXDR(
         signedXDR,
         CONTRACT_CONFIG.NETWORK_PASSPHRASE
@@ -370,12 +378,20 @@ export class ContractService {
         nativeToScVal(BigInt(amount * 10000000)) // Convert to stroops (7 decimal places)
       );
 
-      const { transaction } = await this.buildAndSimulateTransaction(
+      const { transaction, simulationResult } = await this.buildAndSimulateTransaction(
         clinic,
         operation
       );
 
-      const signedXDR = await signTransaction(transaction.toXDR());
+      // Check simulation result for any issues
+      if (simulationResult.error) {
+        throw new Error(`Transaction simulation failed: ${simulationResult.error}`);
+      }
+      
+      // Prepare the transaction with simulation results
+      const preparedTransaction = rpc.assembleTransaction(transaction, simulationResult).build();
+
+      const signedXDR = await signTransaction(preparedTransaction.toXDR());
       const signedTransaction = TransactionBuilder.fromXDR(
         signedXDR,
         CONTRACT_CONFIG.NETWORK_PASSPHRASE
@@ -408,12 +424,20 @@ export class ContractService {
         nativeToScVal(claimId, { type: 'u64' })
       );
 
-      const { transaction } = await this.buildAndSimulateTransaction(
+      const { transaction, simulationResult } = await this.buildAndSimulateTransaction(
         admin,
         operation
       );
 
-      const signedXDR = await signTransaction(transaction.toXDR());
+      // Check simulation result for any issues
+      if (simulationResult.error) {
+        throw new Error(`Transaction simulation failed: ${simulationResult.error}`);
+      }
+      
+      // Prepare the transaction with simulation results
+      const preparedTransaction = rpc.assembleTransaction(transaction, simulationResult).build();
+
+      const signedXDR = await signTransaction(preparedTransaction.toXDR());
       const signedTransaction = TransactionBuilder.fromXDR(
         signedXDR,
         CONTRACT_CONFIG.NETWORK_PASSPHRASE
@@ -446,12 +470,20 @@ export class ContractService {
         nativeToScVal(claimId, { type: 'u64' })
       );
 
-      const { transaction } = await this.buildAndSimulateTransaction(
+      const { transaction, simulationResult } = await this.buildAndSimulateTransaction(
         admin,
         operation
       );
 
-      const signedXDR = await signTransaction(transaction.toXDR());
+      // Check simulation result for any issues
+      if (simulationResult.error) {
+        throw new Error(`Transaction simulation failed: ${simulationResult.error}`);
+      }
+      
+      // Prepare the transaction with simulation results
+      const preparedTransaction = rpc.assembleTransaction(transaction, simulationResult).build();
+
+      const signedXDR = await signTransaction(preparedTransaction.toXDR());
       const signedTransaction = TransactionBuilder.fromXDR(
         signedXDR,
         CONTRACT_CONFIG.NETWORK_PASSPHRASE
@@ -484,12 +516,20 @@ export class ContractService {
         nativeToScVal(claimId, { type: 'u64' })
       );
 
-      const { transaction } = await this.buildAndSimulateTransaction(
+      const { transaction, simulationResult } = await this.buildAndSimulateTransaction(
         admin,
         operation
       );
 
-      const signedXDR = await signTransaction(transaction.toXDR());
+      // Check simulation result for any issues
+      if (simulationResult.error) {
+        throw new Error(`Transaction simulation failed: ${simulationResult.error}`);
+      }
+      
+      // Prepare the transaction with simulation results
+      const preparedTransaction = rpc.assembleTransaction(transaction, simulationResult).build();
+
+      const signedXDR = await signTransaction(preparedTransaction.toXDR());
       const signedTransaction = TransactionBuilder.fromXDR(
         signedXDR,
         CONTRACT_CONFIG.NETWORK_PASSPHRASE
@@ -522,12 +562,20 @@ export class ContractService {
         new Address(clinicAddress).toScVal()
       );
 
-      const { transaction } = await this.buildAndSimulateTransaction(
+      const { transaction, simulationResult } = await this.buildAndSimulateTransaction(
         admin,
         operation
       );
 
-      const signedXDR = await signTransaction(transaction.toXDR());
+      // Check simulation result for any issues
+      if (simulationResult.error) {
+        throw new Error(`Transaction simulation failed: ${simulationResult.error}`);
+      }
+      
+      // Prepare the transaction with simulation results
+      const preparedTransaction = rpc.assembleTransaction(transaction, simulationResult).build();
+
+      const signedXDR = await signTransaction(preparedTransaction.toXDR());
       const signedTransaction = TransactionBuilder.fromXDR(
         signedXDR,
         CONTRACT_CONFIG.NETWORK_PASSPHRASE
