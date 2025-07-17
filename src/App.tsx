@@ -30,7 +30,7 @@ function App(): JSX.Element {
         ) : (
           <div>
             {!userType ? (
-              <div className="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
+              <div className="bg-blue rounded-lg shadow-md p-6 max-w-md mx-auto">
                 <h2 className="text-xl font-semibold mb-4">Select Your Role</h2>
                 <div className="space-y-3">
                   <button
