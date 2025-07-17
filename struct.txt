@@ -1,0 +1,1425 @@
+Directory Structure:
+
+└── ./
+    └── stellar_frontend
+        ├── src
+        │   ├── components
+        │   │   ├── AdminDashboard.tsx
+        │   │   ├── ClinicDashboard.tsx
+        │   │   ├── ConnectWallet.tsx
+        │   │   └── PatientView.tsx
+        │   ├── services
+        │   │   └── walletService.ts
+        │   ├── App.css
+        │   ├── App.tsx
+        │   ├── index.css
+        │   ├── main.tsx
+        │   └── types.ts
+        ├── eslint.config.js
+        ├── index.html
+        ├── package.json
+        ├── postcss.config.js
+        ├── tailwind.config.js
+        ├── tsconfig.json
+        ├── tsconfig.node.json
+        └── vite.config.js
+
+
+
+---
+File: /stellar_frontend/src/components/AdminDashboard.tsx
+---
+
+import React, { useState } from 'react';
+import { DashboardProps, Claim, ClinicInfo } from '../types';
+
+function AdminDashboard({ walletAddress }: DashboardProps): JSX.Element {
+  const [pendingClaims, setPendingClaims] = useState<Claim[]>([
+    { claim_id: 1, patient_id: 'P001', service_code: 'CHECKUP', amount: 100, clinic: 'City Health Clinic', date: '2024-01-15', status: 'Pending' },
+    { claim_id: 2, patient_id: 'P002', service_code: 'SURGERY', amount: 5000, clinic: 'Metro Hospital', date: '2024-01-16', status: 'Pending' },
+    { claim_id: 3, patient_id: 'P003', service_code: 'CONSULTATION', amount: 75, clinic: 'Community Health Center', date: '2024-01-14', status: 'Pending' }
+  ]);
+
+  const [approvedClaims, setApprovedClaims] = useState<Claim[]>([]);
+  const [pendingClinics, setPendingClinics] = useState<ClinicInfo[]>([
+    { name: 'Community Health Center', address: 'GZZZ...ZZZZ', isVerified: false, reputation: { success: 0, total: 0 } }
+  ]);
+
+  const handleApprove = async (claimId: number): Promise<void> => {
+    try {
+      // TODO: Integrate with smart contract
+      console.log('Approving claim:', claimId);
+      
+      const claimToApprove = pendingClaims.find(claim => claim.claim_id === claimId);
+      if (claimToApprove) {
+        const updatedClaim: Claim = { ...claimToApprove, status: 'Approved' };
+        setPendingClaims(prev => prev.filter(claim => claim.claim_id !== claimId));
+        setApprovedClaims(prev => [...prev, updatedClaim]);
+      }
+    } catch (error) {
+      console.error('Approval failed:', error);
+    }
+  };
+
+  const handleReject = async (claimId: number): Promise<void> => {
+    try {
+      // TODO: Integrate with smart contract
+      console.log('Rejecting claim:', claimId);
+      
+      setPendingClaims(prev => prev.filter(claim => claim.claim_id !== claimId));
+    } catch (error) {
+      console.error('Rejection failed:', error);
+    }
+  };
+
+  const handleRelease = async (claimId: number): Promise<void> => {
+    try {
+      // TODO: Integrate with smart contract
+      console.log('Releasing payment for claim:', claimId);
+      
+      setApprovedClaims(prev => 
+        prev.map(claim => 
+          claim.claim_id === claimId 
+            ? { ...claim, status: 'Payment Released' }
+            : claim
+        )
+      );
+    } catch (error) {
+      console.error('Payment release failed:', error);
+    }
+  };
+
+  const handleVerifyClinic = async (clinicAddress: string): Promise<void> => {
+    try {
+      // TODO: Integrate with smart contract
+      console.log('Verifying clinic:', clinicAddress);
+      
+      setPendingClinics(prev => prev.filter(clinic => clinic.address !== clinicAddress));
+    } catch (error) {
+      console.error('Clinic verification failed:', error);
+    }
+  };
+
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Approved': return 'bg-green-100 text-green-800';
+      case 'Rejected': return 'bg-red-100 text-red-800';
+      case 'Payment Released': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+      
+      {/* Pending Claims */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-xl font-semibold mb-4">Pending Claims Review</h3>
+        {pendingClaims.length === 0 ? (
+          <p className="text-gray-500">No pending claims to review.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-4 py-2 text-left">Claim ID</th>
+                  <th className="px-4 py-2 text-left">Patient ID</th>
+                  <th className="px-4 py-2 text-left">Clinic</th>
+                  <th className="px-4 py-2 text-left">Service</th>
+                  <th className="px-4 py-2 text-left">Amount</th>
+                  <th className="px-4 py-2 text-left">Date</th>
+                  <th className="px-4 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingClaims.map((claim) => (
+                  <tr key={claim.claim_id} className="border-t">
+                    <td className="px-4 py-2">{claim.claim_id}</td>
+                    <td className="px-4 py-2">{claim.patient_id}</td>
+                    <td className="px-4 py-2">{claim.clinic}</td>
+                    <td className="px-4 py-2">{claim.service_code}</td>
+                    <td className="px-4 py-2">${claim.amount}</td>
+                    <td className="px-4 py-2">{claim.date}</td>
+                    <td className="px-4 py-2">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleApprove(claim.claim_id)}
+                          className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded text-sm"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleReject(claim.claim_id)}
+                          className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Approved Claims */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-xl font-semibold mb-4">Approved Claims - Payment Release</h3>
+        {approvedClaims.length === 0 ? (
+          <p className="text-gray-500">No approved claims pending payment release.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-4 py-2 text-left">Claim ID</th>
+                  <th className="px-4 py-2 text-left">Patient ID</th>
+                  <th className="px-4 py-2 text-left">Clinic</th>
+                  <th className="px-4 py-2 text-left">Amount</th>
+                  <th className="px-4 py-2 text-left">Status</th>
+                  <th className="px-4 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {approvedClaims.map((claim) => (
+                  <tr key={claim.claim_id} className="border-t">
+                    <td className="px-4 py-2">{claim.claim_id}</td>
+                    <td className="px-4 py-2">{claim.patient_id}</td>
+                    <td className="px-4 py-2">{claim.clinic}</td>
+                    <td className="px-4 py-2">${claim.amount}</td>
+                    <td className="px-4 py-2">
+                      <span className={`px-2 py-1 rounded text-sm ${getStatusColor(claim.status)}`}>
+                        {claim.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      {claim.status === 'Approved' && (
+                        <button
+                          onClick={() => handleRelease(claim.claim_id)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-sm"
+                        >
+                          Release Payment
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Clinic Verification */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-xl font-semibold mb-4">Clinic Verification</h3>
+        {pendingClinics.length === 0 ? (
+          <p className="text-gray-500">No clinics pending verification.</p>
+        ) : (
+          <div className="space-y-4">
+            {pendingClinics.map((clinic, index) => (
+              <div key={index} className="border rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="font-semibold">{clinic.name}</h4>
+                    <p className="text-sm text-gray-600">Address: {clinic.address}</p>
+                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
+                      ⏳ Pending Verification
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleVerifyClinic(clinic.address)}
+                    className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
+                  >
+                    Verify Clinic
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* System Statistics */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-xl font-semibold mb-4">System Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-blue-600">{pendingClaims.length}</p>
+            <p className="text-sm text-gray-600">Pending Claims</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-green-600">{approvedClaims.length}</p>
+            <p className="text-sm text-gray-600">Approved Claims</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-yellow-600">{pendingClinics.length}</p>
+            <p className="text-sm text-gray-600">Pending Clinics</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-purple-600">
+              ${approvedClaims.reduce((sum, claim) => sum + claim.amount, 0)}
+            </p>
+            <p className="text-sm text-gray-600">Total Value</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AdminDashboard;
+
+
+---
+File: /stellar_frontend/src/components/ClinicDashboard.tsx
+---
+
+import React, { useState } from 'react';
+import { DashboardProps, ClinicMetadata, Claim, ClinicRegistrationForm, ClaimSubmissionForm } from '../types';
+
+function ClinicDashboard({ walletAddress }: DashboardProps): JSX.Element {
+  const [isRegistered, setIsRegistered] = useState<boolean>(false);
+  const [clinicData, setClinicData] = useState<ClinicMetadata | null>(null);
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [showRegistration, setShowRegistration] = useState<boolean>(false);
+  const [registrationForm, setRegistrationForm] = useState<ClinicRegistrationForm>({
+    name: '',
+    licenseNumber: ''
+  });
+  const [claimForm, setClaimForm] = useState<ClaimSubmissionForm>({
+    patientId: '',
+    serviceCode: '',
+    amount: ''
+  });
+
+  const handleRegistration = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    try {
+      // TODO: Integrate with smart contract
+      console.log('Registering clinic:', registrationForm);
+      // Mock registration success
+      setIsRegistered(true);
+      setClinicData({
+        name: registrationForm.name,
+        license_number: registrationForm.licenseNumber,
+        registration_date: Date.now(),
+        is_verified: false
+      });
+      setShowRegistration(false);
+    } catch (error) {
+      console.error('Registration failed:', error);
+    }
+  };
+
+  const handleClaimSubmission = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    try {
+      // TODO: Integrate with smart contract
+      console.log('Submitting claim:', claimForm);
+      const newClaim: Claim = {
+        claim_id: Date.now(),
+        patient_id: claimForm.patientId,
+        service_code: claimForm.serviceCode,
+        amount: parseFloat(claimForm.amount),
+        status: 'Pending',
+        date: new Date().toISOString().split('T')[0],
+        clinic: clinicData?.name || 'Unknown Clinic'
+      };
+      setClaims([...claims, newClaim]);
+      setClaimForm({ patientId: '', serviceCode: '', amount: '' });
+    } catch (error) {
+      console.error('Claim submission failed:', error);
+    }
+  };
+
+  const handleRegistrationChange = (field: keyof ClinicRegistrationForm, value: string): void => {
+    setRegistrationForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleClaimChange = (field: keyof ClaimSubmissionForm, value: string): void => {
+    setClaimForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Approved': return 'bg-green-100 text-green-800';
+      case 'Rejected': return 'bg-red-100 text-red-800';
+      case 'Payment Released': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Clinic Dashboard</h2>
+      
+      {!isRegistered ? (
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+          <p>Your clinic is not registered. Please register to start submitting claims.</p>
+          <button
+            onClick={() => setShowRegistration(true)}
+            className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded"
+          >
+            Register Clinic
+          </button>
+        </div>
+      ) : (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          <p>✓ Clinic registered: {clinicData?.name}</p>
+          <p>License: {clinicData?.license_number}</p>
+          <p>Status: {clinicData?.is_verified ? 'Verified' : 'Pending Verification'}</p>
+        </div>
+      )}
+
+      {showRegistration && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-semibold mb-4">Register Clinic</h3>
+          <form onSubmit={handleRegistration}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Clinic Name</label>
+                <input
+                  type="text"
+                  value={registrationForm.name}
+                  onChange={(e) => handleRegistrationChange('name', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">License Number</label>
+                <input
+                  type="text"
+                  value={registrationForm.licenseNumber}
+                  onChange={(e) => handleRegistrationChange('licenseNumber', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  required
+                />
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="submit"
+                  className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+                >
+                  Register
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRegistration(false)}
+                  className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {isRegistered && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-semibold mb-4">Submit New Claim</h3>
+          <form onSubmit={handleClaimSubmission}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Patient ID</label>
+                <input
+                  type="text"
+                  value={claimForm.patientId}
+                  onChange={(e) => handleClaimChange('patientId', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Service Code</label>
+                <input
+                  type="text"
+                  value={claimForm.serviceCode}
+                  onChange={(e) => handleClaimChange('serviceCode', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  placeholder="e.g., CHECKUP, SURGERY"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Amount (USDC)</label>
+                <input
+                  type="number"
+                  value={claimForm.amount}
+                  onChange={(e) => handleClaimChange('amount', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded"
+                  step="0.01"
+                  required
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
+            >
+              Submit Claim
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-xl font-semibold mb-4">Your Claims</h3>
+        {claims.length === 0 ? (
+          <p className="text-gray-500">No claims submitted yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-4 py-2 text-left">Claim ID</th>
+                  <th className="px-4 py-2 text-left">Patient ID</th>
+                  <th className="px-4 py-2 text-left">Service</th>
+                  <th className="px-4 py-2 text-left">Amount</th>
+                  <th className="px-4 py-2 text-left">Status</th>
+                  <th className="px-4 py-2 text-left">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {claims.map((claim) => (
+                  <tr key={claim.claim_id} className="border-t">
+                    <td className="px-4 py-2">{claim.claim_id}</td>
+                    <td className="px-4 py-2">{claim.patient_id}</td>
+                    <td className="px-4 py-2">{claim.service_code}</td>
+                    <td className="px-4 py-2">${claim.amount}</td>
+                    <td className="px-4 py-2">
+                      <span className={`px-2 py-1 rounded text-sm ${getStatusColor(claim.status)}`}>
+                        {claim.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">{claim.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default ClinicDashboard;
+
+
+---
+File: /stellar_frontend/src/components/ConnectWallet.tsx
+---
+
+import React, { useState } from 'react';
+import { ConnectWalletProps } from '../types';
+import { walletService } from '../services/walletService';
+
+function ConnectWallet({ onConnect }: ConnectWalletProps): JSX.Element {
+  const [connecting, setConnecting] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+
+  const connectFreighter = async (): Promise<void> => {
+    setConnecting(true);
+    setError('');
+
+    try {
+      const walletState = await walletService.connect();
+      
+      if (walletState.error) {
+        setError(walletState.error);
+      } else if (walletState.publicKey) {
+        onConnect(walletState.publicKey);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
+        <p className="text-gray-600 mb-6">
+          Connect your Freighter wallet to access the health insurance claim system
+        </p>
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+        
+        <button
+          onClick={connectFreighter}
+          disabled={connecting}
+          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-semibold py-3 px-6 rounded-lg transition duration-200"
+        >
+          {connecting ? 'Connecting...' : 'Connect Freighter Wallet'}
+        </button>
+        
+        <p className="text-sm text-gray-500 mt-4">
+          Don't have Freighter? <a href="https://freighter.app" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Download here</a>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default ConnectWallet;
+
+
+---
+File: /stellar_frontend/src/components/PatientView.tsx
+---
+
+import React, { useState } from 'react';
+import { DashboardProps, Claim, ClinicInfo, ClaimStatus } from '../types';
+
+function PatientView({ walletAddress }: DashboardProps): JSX.Element {
+  const [claims, setClaims] = useState<Claim[]>([
+    { claim_id: 1, patient_id: 'P001', service_code: 'CHECKUP', amount: 100, clinic: 'City Health Clinic', date: '2024-01-15', status: 'Approved' },
+    { claim_id: 2, patient_id: 'P001', service_code: 'SURGERY', amount: 5000, clinic: 'Metro Hospital', date: '2024-01-16', status: 'Payment Released' },
+    { claim_id: 3, patient_id: 'P001', service_code: 'CONSULTATION', amount: 75, clinic: 'City Health Clinic', date: '2024-01-14', status: 'Rejected' }
+  ]);
+  
+  const [searchClaimId, setSearchClaimId] = useState<string>('');
+  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
+  const [clinics, setClinics] = useState<ClinicInfo[]>([
+    { name: 'City Health Clinic', address: 'GXXX...XXXX', isVerified: true, reputation: { success: 85, total: 100 } },
+    { name: 'Metro Hospital', address: 'GYYY...YYYY', isVerified: true, reputation: { success: 92, total: 150 } },
+    { name: 'Community Health Center', address: 'GZZZ...ZZZZ', isVerified: false, reputation: { success: 0, total: 0 } }
+  ]);
+
+  const searchClaim = (): void => {
+    const claim = claims.find(c => c.claim_id.toString() === searchClaimId);
+    setSelectedClaim(claim || null);
+  };
+
+  const getStatusColor = (status: ClaimStatus): string => {
+    switch (status) {
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Approved': return 'bg-green-100 text-green-800';
+      case 'Rejected': return 'bg-red-100 text-red-800';
+      case 'Payment Released': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getReputationColor = (percentage: number): string => {
+    if (percentage >= 90) return 'text-green-600';
+    if (percentage >= 75) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const calculateReputationPercentage = (success: number, total: number): number => {
+    return total > 0 ? Math.round((success / total) * 100) : 0;
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Patient Dashboard</h2>
+      
+      {/* Claim Search */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold mb-4">Search Claim Status</h3>
+        <div className="flex space-x-3">
+          <input
+            type="text"
+            value={searchClaimId}
+            onChange={(e) => setSearchClaimId(e.target.value)}
+            placeholder="Enter Claim ID"
+            className="flex-1 p-2 border border-gray-300 rounded"
+          />
+          <button
+            onClick={searchClaim}
+            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+          >
+            Search
+          </button>
+        </div>
+        
+        {selectedClaim && (
+          <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+            <h4 className="font-semibold mb-2">Claim Details</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Claim ID</p>
+                <p className="font-medium">{selectedClaim.claim_id}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Patient ID</p>
+                <p className="font-medium">{selectedClaim.patient_id}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Service</p>
+                <p className="font-medium">{selectedClaim.service_code}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Amount</p>
+                <p className="font-medium">${selectedClaim.amount}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Clinic</p>
+                <p className="font-medium">{selectedClaim.clinic}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Status</p>
+                <span className={`px-2 py-1 rounded text-sm ${getStatusColor(selectedClaim.status)}`}>
+                  {selectedClaim.status}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {searchClaimId && !selectedClaim && (
+          <div className="mt-4 p-4 border border-red-300 rounded-lg bg-red-50">
+            <p className="text-red-700">No claim found with ID: {searchClaimId}</p>
+          </div>
+        )}
+      </div>
+
+      {/* My Claims History */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold mb-4">My Claims History</h3>
+        {claims.length === 0 ? (
+          <p className="text-gray-500">No claims found.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-4 py-2 text-left">Claim ID</th>
+                  <th className="px-4 py-2 text-left">Service</th>
+                  <th className="px-4 py-2 text-left">Clinic</th>
+                  <th className="px-4 py-2 text-left">Amount</th>
+                  <th className="px-4 py-2 text-left">Date</th>
+                  <th className="px-4 py-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {claims.map((claim) => (
+                  <tr key={claim.claim_id} className="border-t">
+                    <td className="px-4 py-2">{claim.claim_id}</td>
+                    <td className="px-4 py-2">{claim.service_code}</td>
+                    <td className="px-4 py-2">{claim.clinic}</td>
+                    <td className="px-4 py-2">${claim.amount}</td>
+                    <td className="px-4 py-2">{claim.date}</td>
+                    <td className="px-4 py-2">
+                      <span className={`px-2 py-1 rounded text-sm ${getStatusColor(claim.status)}`}>
+                        {claim.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Clinic Directory */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold mb-4">Verified Clinics Directory</h3>
+        <div className="space-y-4">
+          {clinics.map((clinic, index) => {
+            const reputationPercentage = calculateReputationPercentage(clinic.reputation.success, clinic.reputation.total);
+            
+            return (
+              <div key={index} className="border rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h4 className="font-semibold">{clinic.name}</h4>
+                    <p className="text-sm text-gray-600">Address: {clinic.address}</p>
+                    
+                    <div className="mt-2 flex items-center space-x-4">
+                      <div className="flex items-center">
+                        {clinic.isVerified ? (
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
+                            ✓ Verified
+                          </span>
+                        ) : (
+                          <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
+                            ⏳ Pending Verification
+                          </span>
+                        )}
+                      </div>
+                      
+                      {clinic.reputation.total > 0 && (
+                        <div>
+                          <span className="text-sm text-gray-600">Success Rate: </span>
+                          <span className={`font-medium ${getReputationColor(reputationPercentage)}`}>
+                            {reputationPercentage}%
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            {' '}({clinic.reputation.success}/{clinic.reputation.total})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Patient Information */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold mb-4">Patient Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Patient ID</p>
+            <p className="font-medium">P001</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Wallet Address</p>
+            <p className="font-medium text-xs">{walletAddress}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Total Claims</p>
+            <p className="font-medium">{claims.length}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Approved Claims</p>
+            <p className="font-medium text-green-600">
+              {claims.filter(c => c.status === 'Approved' || c.status === 'Payment Released').length}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default PatientView;
+
+
+---
+File: /stellar_frontend/src/services/walletService.ts
+---
+
+import freighterApi from '@stellar/freighter-api';
+
+export interface WalletState {
+  isConnected: boolean;
+  publicKey: string | null;
+  error: string | null;
+}
+
+export class FreighterWalletService {
+  // Check if Freighter is installed
+  async isFreighterInstalled(): Promise<boolean> {
+    try {
+      const { isConnected } = await freighterApi.isConnected();
+      return isConnected;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // Check if user has allowed connection
+  async isAllowed(): Promise<boolean> {
+    try {
+      const { isAllowed } = await freighterApi.isAllowed();
+      return isAllowed;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // Connect to Freighter wallet
+  async connect(): Promise<WalletState> {
+    try {
+      if (!await this.isFreighterInstalled()) {
+        throw new Error('Freighter wallet is not installed. Please install it from freighter.app');
+      }
+
+      // Request access if not already allowed
+      if (!await this.isAllowed()) {
+        await freighterApi.setAllowed();
+      }
+
+      const { address } = await freighterApi.getAddress();
+      return {
+        isConnected: true,
+        publicKey: address,
+        error: null
+      };
+    } catch (error) {
+      return {
+        isConnected: false,
+        publicKey: null,
+        error: error instanceof Error ? error.message : 'Failed to connect to wallet'
+      };
+    }
+  }
+
+  // Sign a transaction (for future smart contract integration)
+  async signTransaction(xdr: string): Promise<string> {
+    try {
+      const { signedXDR } = await freighterApi.signTransaction(xdr);
+      return signedXDR;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to sign transaction');
+    }
+  }
+
+  // Get network details
+  async getNetwork(): Promise<string> {
+    try {
+      const { network } = await freighterApi.getNetwork();
+      return network;
+    } catch (error) {
+      throw new Error('Failed to get network information');
+    }
+  }
+
+  // Format Stellar address for display
+  formatAddress(address: string): string {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-6)}`;
+  }
+
+  // Placeholder methods for health insurance contract integration
+  async registerClinic(
+    clinicAddress: string,
+    name: string,
+    licenseNumber: string
+  ): Promise<string> {
+    // TODO: Implement smart contract call for clinic registration
+    throw new Error('Smart contract integration pending');
+  }
+
+  async submitClaim(
+    clinic: string,
+    patientId: string,
+    serviceCode: string,
+    amount: number
+  ): Promise<string> {
+    // TODO: Implement smart contract call for claim submission
+    throw new Error('Smart contract integration pending');
+  }
+
+  async approveClaim(admin: string, claimId: number): Promise<string> {
+    // TODO: Implement smart contract call for claim approval
+    throw new Error('Smart contract integration pending');
+  }
+
+  async rejectClaim(admin: string, claimId: number): Promise<string> {
+    // TODO: Implement smart contract call for claim rejection
+    throw new Error('Smart contract integration pending');
+  }
+
+  async releaseClaim(admin: string, claimId: number): Promise<string> {
+    // TODO: Implement smart contract call for payment release
+    throw new Error('Smart contract integration pending');
+  }
+
+  async verifyClinic(admin: string, clinicAddress: string): Promise<string> {
+    // TODO: Implement smart contract call for clinic verification
+    throw new Error('Smart contract integration pending');
+  }
+}
+
+export const walletService = new FreighterWalletService();
+
+
+---
+File: /stellar_frontend/src/App.css
+---
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+
+
+---
+File: /stellar_frontend/src/App.tsx
+---
+
+import React, { useState } from 'react';
+import './App.css';
+import ConnectWallet from './components/ConnectWallet';
+import ClinicDashboard from './components/ClinicDashboard';
+import AdminDashboard from './components/AdminDashboard';
+import PatientView from './components/PatientView';
+import { UserType } from './types';
+import { walletService } from './services/walletService';
+
+function App(): JSX.Element {
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [userType, setUserType] = useState<UserType>('');
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-blue-600 text-white p-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Health Insurance Claims</h1>
+          {walletAddress && (
+            <div className="text-sm">
+              Connected: {walletService.formatAddress(walletAddress)}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="container mx-auto p-4">
+        {!walletAddress ? (
+          <ConnectWallet onConnect={setWalletAddress} />
+        ) : (
+          <div>
+            {!userType ? (
+              <div className="bg-blue rounded-lg shadow-md p-6 max-w-md mx-auto">
+                <h2 className="text-xl font-semibold mb-4">Select Your Role</h2>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setUserType('clinic')}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg"
+                  >
+                    Clinic Dashboard
+                  </button>
+                  <button
+                    onClick={() => setUserType('admin')}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
+                  >
+                    Admin Dashboard
+                  </button>
+                  <button
+                    onClick={() => setUserType('patient')}
+                    className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg"
+                  >
+                    Patient View
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-4">
+                  <button
+                    onClick={() => setUserType('')}
+                    className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg"
+                  >
+                    ← Back to Role Selection
+                  </button>
+                </div>
+                
+                {userType === 'clinic' && <ClinicDashboard walletAddress={walletAddress} />}
+                {userType === 'admin' && <AdminDashboard walletAddress={walletAddress} />}
+                {userType === 'patient' && <PatientView walletAddress={walletAddress} />}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
+
+
+---
+File: /stellar_frontend/src/index.css
+---
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+
+
+---
+File: /stellar_frontend/src/main.tsx
+---
+
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+
+---
+File: /stellar_frontend/src/types.ts
+---
+
+// Smart contract types
+export interface Claim {
+  claim_id: number;
+  patient_id: string;
+  service_code: string;
+  amount: number;
+  date: string;
+  clinic: string;
+  status: ClaimStatus;
+}
+
+export interface ClinicMetadata {
+  name: string;
+  license_number: string;
+  registration_date: number;
+  is_verified: boolean;
+}
+
+export interface Reputation {
+  success_count: number;
+  failure_count: number;
+}
+
+export type ClaimStatus = 'Pending' | 'Approved' | 'Rejected' | 'Payment Released';
+
+export type UserType = 'clinic' | 'admin' | 'patient' | '';
+
+// Form types
+export interface ClinicRegistrationForm {
+  name: string;
+  licenseNumber: string;
+}
+
+export interface ClaimSubmissionForm {
+  patientId: string;
+  serviceCode: string;
+  amount: string;
+}
+
+// Component prop types
+export interface ConnectWalletProps {
+  onConnect: (address: string) => void;
+}
+
+export interface DashboardProps {
+  walletAddress: string;
+}
+
+// Clinic directory types
+export interface ClinicInfo {
+  name: string;
+  address: string;
+  isVerified: boolean;
+  reputation: {
+    success: number;
+    total: number;
+  };
+}
+
+
+---
+File: /stellar_frontend/eslint.config.js
+---
+
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{js,jsx}'],
+    extends: [
+      js.configs.recommended,
+      reactHooks.configs['recommended-latest'],
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+])
+
+
+
+---
+File: /stellar_frontend/index.html
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+
+
+---
+File: /stellar_frontend/package.json
+---
+
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@stellar/freighter-api": "^4.1.0",
+    "@stellar/stellar-base": "^13.1.0",
+    "@stellar/stellar-sdk": "^13.3.0",
+    "@tailwindcss/postcss": "^4.1.11",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.11"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@types/node": "^24.0.14",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "eslint": "^9.30.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.4"
+  }
+}
+
+
+
+---
+File: /stellar_frontend/postcss.config.js
+---
+
+export default {
+  plugins: {
+    '@tailwindcss/postcss': {},
+    autoprefixer: {},
+  },
+}
+
+
+---
+File: /stellar_frontend/tailwind.config.js
+---
+
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        stellar: {
+          blue: '#0070f3',
+          dark: '#1a1a1a',
+          gray: '#666666',
+        },
+      },
+    },
+  },
+  plugins: [],
+}
+
+
+---
+File: /stellar_frontend/tsconfig.json
+---
+
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+
+
+---
+File: /stellar_frontend/tsconfig.node.json
+---
+
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.js"]
+}
+
+
+---
+File: /stellar_frontend/vite.config.js
+---
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+

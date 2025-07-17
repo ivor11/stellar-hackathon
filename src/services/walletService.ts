@@ -58,7 +58,9 @@ export class FreighterWalletService {
   // Sign a transaction (for smart contract integration)
   async signTransaction(xdr: string): Promise<string> {
     try {
-      const { signedTxXdr } = await freighterApi.signTransaction(xdr);
+      const { signedTxXdr } = await freighterApi.signTransaction(xdr, {
+        networkPassphrase: contractService.getNetworkPassphrase(),
+      });
       return signedTxXdr;
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Failed to sign transaction');
